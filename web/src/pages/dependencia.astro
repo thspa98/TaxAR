@@ -1,0 +1,203 @@
+---
+import Base from '../layouts/Base.astro';
+import Desplegable from '../components/Desplegable.astro';
+import Explicacion from '../components/Explicacion.astro';
+import Fuente from '../components/Fuente.astro';
+import Termino from '../components/Termino.astro';
+import RankingInteractivo from '../components/charts/RankingInteractivo.jsx';
+import {
+  ANIO_ACTUAL, ANIOS, CATEGORIAS, META, avisoFaltantes, jur, ranking, rankingConNombres,
+} from '../lib/datos';
+import { millones, num, pct, veces } from '../lib/formato';
+
+const A = ANIO_ACTUAL;
+
+const porAnio: Record<string, any[]> = {};
+for (const a of ANIOS) porAnio[String(a)] = rankingConNombres('dependencia_nacion', a);
+
+const dep = ranking('dependencia_nacion', A);
+const mas = dep.slice(0, 5);
+const menos = dep.slice(-5).reverse();
+const brecha = veces(dep[0].valor, dep[dep.length - 1].valor);
+
+const cat = (slug: string) => CATEGORIAS[slug]?.[String(A)] ?? {};
+const propias = (slug: string) => cat(slug)['impuestos-propios'] ?? 0;
+const nacionales = (slug: string) => cat(slug)['coparticipacion'] ?? 0;
+---
+
+<Base
+  titulo="Cuánto depende cada provincia de la Nación"
+  descripcion={`Qué parte de los impuestos que maneja cada provincia argentina recauda ella y qué parte le envía la Nación, en ${A}.`}
+>
+  <section class="encabezado">
+    <div class="contenedor">
+      <p class="pildora pildora-oro">Recursos tributarios · {A}</p>
+      <h1 class="display titulo">¿De dónde sale la plata de tu provincia?</h1>
+      <p class="bajada">
+        De cada 100 pesos de impuestos que maneja {jur(dep[0].slug).nombre},
+        <strong>{num(dep[0].valor)} llegan de la Nación</strong>. En
+        {' '}{jur(dep[dep.length - 1].slug).nombre} son <strong>{num(dep[dep.length - 1].valor)}</strong>.
+        Esa diferencia de {brecha} veces explica buena parte de la política argentina.
+      </p>
+      <p class="resumen-seccion"><b>Qué encontrás acá.</b> Qué parte de los impuestos que maneja cada provincia recauda ella misma y qué parte le llega de la Nación. Es el indicador que mejor explica cuánta autonomía real tiene cada gobierno provincial.</p>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="contenedor">
+
+      {avisoFaltantes(A) && (
+        <p class="aviso-dato"><strong>Falta una jurisdicción en {A}:</strong> {avisoFaltantes(A)}</p>
+      )}
+
+      <!-- Contraste principal -->
+      <div class="grilla g-2">
+        <div class="tarjeta tarjeta-p contraste alta">
+          <p class="etiqueta">Las que menos deciden</p>
+          <ul class="lista">
+            {mas.map((r) => (
+              <li>
+                <span class="nombre">{jur(r.slug).nombre}</span>
+                <span class="valor num">{pct(r.valor)}</span>
+                <div class="barra-dato"><span style={`width:${r.valor}%;background:var(--oro)`}></span></div>
+              </li>
+            ))}
+          </ul>
+          <p class="mini pie-nota">
+            Casi todo lo que gastan depende de una transferencia que no controlan.
+          </p>
+        </div>
+
+        <div class="tarjeta tarjeta-p contraste baja">
+          <p class="etiqueta">Las que más se financian solas</p>
+          <ul class="lista">
+            {menos.map((r) => (
+              <li>
+                <span class="nombre">{jur(r.slug).nombre}</span>
+                <span class="valor num">{pct(r.valor)}</span>
+                <div class="barra-dato"><span style={`width:${r.valor}%;background:var(--navy-2)`}></span></div>
+              </li>
+            ))}
+          </ul>
+          <p class="mini pie-nota">
+            Recaudan la mayor parte con sus propios impuestos o con regalías.
+          </p>
+        </div>
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion titulo="Qué significa 'depender de la Nación'">
+          <p>
+            Las provincias tienen dos fuentes de impuestos. Una son los que cobran ellas:
+            Ingresos Brutos, Inmobiliario, Automotor y Sellos. La otra es la
+            <strong> <Termino clave="dependencia">coparticipación</Termino></strong>: una parte de lo que recauda la AFIP en todo
+            el país y que se reparte entre las provincias según una ley de 1988.
+          </p>
+          <p>
+            Cuanto más alto es el porcentaje que llega de la Nación, menos margen tiene una
+            provincia para decidir por su cuenta — y más queda su presupuesto atado a
+            negociaciones políticas con el gobierno nacional. También significa que sus
+            habitantes sienten menos el costo de lo que su provincia gasta, porque no lo
+            pagan directamente con impuestos provinciales.
+          </p>
+        </Explicacion>
+      </div>
+
+      <div style="margin-top:26px"><Desplegable titulo="Ranking de dependencia de la Nación" nota="Las 24 jurisdicciones, año por año, desde 2005." accion="Ver ranking">
+
+        <RankingInteractivo
+          client:visible
+          datosPorAnio={porAnio}
+          anios={ANIOS}
+          anioInicial={A}
+          unidad="pct"
+          sufijo="viene de la Nación"
+        />
+
+        <Fuente clave="serie_aif" />
+      </Desplegable></div>
+
+      <div style="margin-top:26px"><Desplegable titulo="Lo mismo en pesos, no en porcentajes" nota="Cuánto recaudó cada una por su cuenta y cuánto recibió de la Nación." accion="Ver tabla">
+
+        <div class="tabla-scroll">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th class="puesto">#</th>
+                <th>Jurisdicción</th>
+                <th class="der">Impuestos propios</th>
+                <th class="der">Envíos de la Nación</th>
+                <th class="der">Depende</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dep.map((r) => (
+                <tr class:list={[(r.puesto === 1 || r.puesto === dep.length) && 'destacada']}>
+                  <td class="puesto">{r.puesto}</td>
+                  <td><strong>{jur(r.slug).corto}</strong></td>
+                  <td class="der num">{millones(propias(r.slug))}</td>
+                  <td class="der num">{millones(nacionales(r.slug))}</td>
+                  <td class="der num"><strong>{pct(r.valor)}</strong></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Fuente clave="serie_aif" nota="Recursos tributarios: de origen provincial y de origen nacional" />
+      </Desplegable></div>
+
+      <div style="margin-top:26px">
+        <Explicacion variante="atencion" titulo="Un matiz importante">
+          <p>
+            Un porcentaje alto no significa que la provincia reciba un trato favorable. La
+            coparticipación es, en buena medida, plata que sus propios habitantes pagaron en
+            IVA y Ganancias y que vuelve por otra vía.
+          </p>
+          <p>
+            Tampoco significa que sea pobre: CABA aparece como la menos dependiente en parte
+            porque concentra la actividad económica del país y puede recaudar Ingresos Brutos
+            sobre ella. Y Neuquén se financia sola gracias a las regalías de Vaca Muerta, no
+            porque cobre más impuestos.
+          </p>
+        </Explicacion>
+      </div>
+
+    </div>
+  </section>
+</Base>
+
+<style>
+  .encabezado { background: var(--navy); color: #fff; padding-block: 52px 44px; }
+  .encabezado .pildora { background: rgba(212,175,55,.2); border-color: rgba(212,175,55,.45); color: var(--oro-claro); }
+  .titulo { font-size: clamp(2.1rem, 5.4vw, 3.3rem); margin: 16px 0 14px; }
+  .resumen-seccion {
+    margin-top: 16px; max-width: 700px;
+    font-size: .93rem; line-height: 1.68; color: #9FB3D0;
+    border-left: 2px solid rgba(212, 175, 55, .55); padding-left: 14px;
+  }
+  .resumen-seccion b { color: var(--oro-claro); font-weight: 600; }
+  .encabezado .bajada { color: #CBD8EA; max-width: 680px; }
+  .encabezado strong { color: #fff; font-weight: 600; }
+  .h2 { font-size: clamp(1.35rem, 2.7vw, 1.8rem); color: var(--navy); margin-bottom: 5px; }
+
+  .contraste.alta { border-top: 4px solid var(--oro); }
+  .contraste.baja { border-top: 4px solid var(--navy-2); }
+  .lista { list-style: none; margin-top: 14px; }
+  .lista li { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 11px 0; border-bottom: 1px solid var(--borde); }
+  .lista li:last-child { border-bottom: 0; }
+  .nombre { font-weight: 600; }
+  .valor { font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+  .lista .barra { grid-column: 1 / -1; }
+  .pie-nota { margin-top: 14px; }
+  .aviso-dato {
+    background: rgba(180, 83, 9, .07);
+    border: 1px solid rgba(180, 83, 9, .28);
+    border-left: 4px solid var(--alerta);
+    border-radius: var(--r-md);
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    font-size: .93rem;
+    line-height: 1.6;
+  }
+  .aviso-dato strong { color: var(--alerta); }
+</style>

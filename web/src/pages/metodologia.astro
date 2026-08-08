@@ -1,0 +1,257 @@
+---
+import Base from '../layouts/Base.astro';
+import Desplegable from '../components/Desplegable.astro';
+import Explicacion from '../components/Explicacion.astro';
+import { GLOSARIO, IPC, META } from '../lib/datos';
+import { fecha } from '../lib/formato';
+
+const controles = META.controles as { control: string; severidad: string; detalle: string }[];
+const fuentes = Object.entries(META.fuentes) as [string, any][];
+const conceptos = Object.entries(GLOSARIO.conceptos) as [string, any][];
+
+const ETIQUETA: Record<string, string> = {
+  cobertura_fiscal: 'Ninguna jurisdicción falta',
+  cobertura_poblacion: 'Todas tienen población cargada',
+  suma_consolidado: 'La suma de las 24 reproduce el total oficial',
+  identidad_contable: 'Las cuentas cierran en cada serie',
+  duplicados: 'No hay años repetidos por error de la fuente',
+  anios_sin_reporte: 'Años que la fuente no reportó',
+  ajuste_censal: 'Población corregida con el Censo 2022',
+  deflactabilidad: 'Hasta dónde llega el ajuste por inflación',
+};
+---
+
+<Base
+  titulo="Cómo se calcula cada número"
+  descripcion="Fuentes, definiciones, controles de calidad y limitaciones conocidas de los datos publicados en TaxAR."
+>
+  <section class="encabezado">
+    <div class="contenedor estrecho">
+      <h1 class="display titulo">Cómo se calcula cada número</h1>
+      <p class="bajada">
+        Un sitio de transparencia que no explica de dónde saca sus cifras es una opinión con
+        gráficos. Acá está todo: las fuentes, las decisiones metodológicas y —sobre todo—
+        lo que estos datos todavía no pueden decir.
+      </p>
+      <p class="resumen-seccion"><b>Qué encontrás acá.</b> De dónde sale cada número, qué decisiones metodológicas se tomaron, qué controles corren antes de publicar y —sobre todo— qué cosas estos datos todavía no pueden decir.</p>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="contenedor estrecho">
+
+      <Desplegable titulo="Las cuatro condiciones para poder comparar" nota="Universo, tipo de dato, base contable y unidad. Si alguna difiere, la comparación es incorrecta aunque los dos números sean verdaderos." accion="Leer" variante="plano">
+<ol class="dimensiones">
+        <li>
+          <h3>Universo — qué organismos se cuentan</h3>
+          <p>
+            Todo el sitio usa <strong>Administración Pública No Financiera</strong>: incluye la
+            administración central y también las cajas de jubilaciones provinciales y los
+            organismos descentralizados.
+          </p>
+          <p class="ejemplo">
+            No es un detalle técnico. El resultado financiero de Córdoba en 2026 es de
+            439.906 millones contando sólo la administración central, y de 12.996 millones
+            contando la APNF — porque la Caja de Jubilaciones tiene un déficit de 418.575
+            millones. <strong>Una diferencia de 34 veces según qué se incluya.</strong>
+          </p>
+        </li>
+        <li>
+          <h3>Tipo de dato — planeado o efectivo</h3>
+          <p>
+            Todo el sitio usa <strong>ejecutado</strong>: lo que se gastó de verdad, no lo que
+            el presupuesto había previsto. Los presupuestos casi nunca se cumplen tal cual.
+          </p>
+        </li>
+        <li>
+          <h3>Base contable — cuándo se registra</h3>
+          <p>
+            Todo el sitio usa <strong>devengado</strong>: el gasto se anota cuando nace la
+            obligación de pagar, no cuando el dinero sale. La Nación publica su base caja
+            mensual con el otro criterio, así que esas cifras no se mezclan con éstas.
+          </p>
+        </li>
+        <li>
+          <h3>Unidad — en qué escala está expresado</h3>
+          <p>
+            Todo se normaliza a <strong>millones de pesos corrientes</strong> al momento de
+            cargarlo, y el sitio lo reescribe a la escala más legible en cada lugar.
+          </p>
+        </li>
+      </ol>
+
+      
+</Desplegable>
+
+      <h2 class="display h2">De dónde salen los datos</h2>
+      <p>
+        El Ministerio de Economía publica las 24 jurisdicciones en un mismo archivo y con el
+        mismo esquema. Eso evita tener que recorrer 24 portales provinciales con 24 formatos
+        distintos, y es lo que hace posible una comparación honesta.
+      </p>
+
+      <div class="fuentes">
+        {fuentes.map(([clave, f]) => (
+          <article class="fuente-item">
+            <h3><a href={f.url} target="_blank" rel="noopener noreferrer">{f.nombre}</a></h3>
+            <p class="mini">{f.organismo}</p>
+            <p class="chico">{f.cobertura}</p>
+            <p class="mini">Actualización {f.frecuencia} · revisado el {fecha(f.revisado)}</p>
+          </article>
+        ))}
+      </div>
+      <h2 class="display h2">Cómo se verifica que los datos estén bien</h2>
+      <p>
+        Los errores más graves que aparecieron en este proyecto no los encontró nadie
+        leyendo las planillas: los encontraron estos controles. Corren cada vez que se
+        regeneran los datos, y si alguno falla el sitio no se publica.
+      </p>
+
+      <Desplegable titulo="Los controles que corren en cada actualización" nota="Doce verificaciones automáticas. Si alguna falla, el sitio no se publica." accion="Ver controles" variante="plano">
+<ul class="controles">
+        {controles.map((c) => (
+          <li class:list={['control', c.severidad]}>
+            <div class="marca-control">{c.severidad === 'ok' ? 'Verificado' : c.severidad === 'aviso' ? 'Con reserva' : 'Error'}</div>
+            <div>
+              <h3>{ETIQUETA[c.control] ?? c.control}</h3>
+              <p class="chico">{c.detalle}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      
+</Desplegable>
+
+      <Explicacion variante="atencion" titulo="Tres limitaciones que conviene tener presentes">
+        <p>
+          <strong>La inflación anterior a 2017 no está resuelta.</strong> El IPC oficial de
+          INDEC arranca en diciembre de 2016, así que los años fiscales previos no se pueden
+          expresar en pesos constantes. Además, el índice de 2007 a 2015 está cuestionado por
+          la intervención del organismo en ese período. Completar la serie exige elegir una
+          fuente alternativa — el IPC de San Luis o de CABA, o series privadas reconstruidas —
+          y esa decisión se va a explicitar acá antes de aplicarla. Mientras tanto, el sitio
+          muestra "sin dato" en vez de estimar un número.
+        </p>
+        <p>
+          <strong>El gasto por finalidad llega hasta 2024, un año menos que el resto.</strong>
+          La serie funcional se publica más tarde que la de ahorro-inversión, así que las
+          páginas de "en qué gastan" muestran {'{'}2024{'}'} mientras el resto del sitio ya está en
+          2025. Además, la propia fuente aclara que la desagregación de 2009, 2013, 2017 y
+          2018 son estimaciones suyas y no datos reportados por las provincias; el sitio lo
+          avisa cuando se elige uno de esos años.
+        </p>
+        <p>
+          <strong>Los datos son continentales; el mapa, no.</strong> La provincia de Tierra
+          del Fuego, Antártida e Islas del Atlántico Sur se llama así porque su jurisdicción
+          incluye la Antártida, las Malvinas, las Georgias del Sur y las Sandwich del Sur. El
+          mapa del sitio las dibuja, porque así define el territorio el Instituto Geográfico
+          Nacional. Pero <strong>las cifras fiscales corresponden a la actividad continental</strong>:
+          es lo que la provincia ejecuta y reporta. Ningún número de este sitio mide gasto o
+          recaudación en la Antártida o en las islas.
+        </p>
+        <p>
+          <strong>Los impuestos provinciales no están desagregados.</strong> La fuente trae
+          "de origen provincial" como un solo bloque. Separar Ingresos Brutos, Inmobiliario,
+          Automotor y Sellos exige ir a cada provincia.
+        </p>
+      </Explicacion>
+      <Desplegable titulo="Glosario" nota="Qué significa cada término fiscal, en castellano común." accion="Ver glosario" variante="plano">
+<dl class="glosario">
+        {conceptos.map(([, c]) => (
+          <div>
+            <dt>{c.etiqueta}</dt>
+            <dd>{c.explica}</dd>
+          </div>
+        ))}
+      </dl>
+
+      
+</Desplegable>
+
+      <h2 class="display h2">Cómo verificar por tu cuenta</h2>
+      <p>
+        Todos los archivos oficiales están enlazados arriba. Los datos que usa el sitio se
+        generan con un script abierto que lee esos archivos y escribe los resultados en
+        formato JSON, versionados junto al código: cualquiera puede correrlo y obtener
+        exactamente las mismas cifras. Si encontrás una diferencia, es un error y queremos
+        saberlo.
+      </p>
+
+      <p class="mini" style="margin-top:26px">
+        Datos generados el {fecha(META.generado)}. IPC disponible hasta{' '}
+        {Object.values(IPC.anio_base)[0]} (último año completo).
+      </p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .encabezado { background: var(--navy); color: #fff; padding-block: 52px 44px; }
+  .titulo { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 14px; }
+  .resumen-seccion {
+    margin-top: 16px; max-width: 700px;
+    font-size: .93rem; line-height: 1.68; color: #9FB3D0;
+    border-left: 2px solid rgba(212, 175, 55, .55); padding-left: 14px;
+  }
+  .resumen-seccion b { color: var(--oro-claro); font-weight: 600; }
+  .encabezado .bajada { color: #CBD8EA; }
+
+  .h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); color: var(--navy); margin: 42px 0 12px; }
+  .h2:first-of-type { margin-top: 0; }
+  section p { margin-bottom: 14px; }
+
+  .dimensiones { list-style: none; counter-reset: d; margin: 22px 0 10px; }
+  .dimensiones > li {
+    counter-increment: d;
+    background: var(--papel); border: 1px solid var(--borde);
+    border-radius: var(--r-md); padding: 20px 22px 18px 62px;
+    margin-bottom: 13px; position: relative;
+  }
+  .dimensiones > li::before {
+    content: counter(d);
+    position: absolute; left: 20px; top: 20px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--navy); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: .85rem;
+  }
+  .dimensiones h3 { font-size: 1.05rem; color: var(--navy); margin-bottom: 7px; }
+  .dimensiones p { font-size: .94rem; margin-bottom: 9px; }
+  .dimensiones p:last-child { margin-bottom: 0; }
+  .ejemplo {
+    background: rgba(180,83,9,.06); border-left: 3px solid var(--alerta);
+    padding: 11px 14px; border-radius: 0 8px 8px 0; color: #6B4A12;
+  }
+
+  .fuentes { display: grid; gap: 12px; margin: 20px 0 10px; }
+  .fuente-item { background: var(--papel); border: 1px solid var(--borde); border-radius: var(--r-md); padding: 16px 18px; }
+  .fuente-item h3 { font-size: 1rem; margin-bottom: 3px; }
+  .fuente-item p { margin-bottom: 3px; }
+
+  .controles { list-style: none; display: grid; gap: 9px; margin: 20px 0 30px; }
+  .control {
+    display: grid; grid-template-columns: 108px 1fr; gap: 16px;
+    background: var(--papel); border: 1px solid var(--borde);
+    border-left: 4px solid var(--superavit);
+    border-radius: var(--r-md); padding: 15px 18px;
+  }
+  .control.aviso { border-left-color: var(--alerta); }
+  .control.error { border-left-color: var(--deficit); }
+  .marca-control {
+    font-size: .68rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--superavit); padding-top: 2px;
+  }
+  .control.aviso .marca-control { color: var(--alerta); }
+  .control.error .marca-control { color: var(--deficit); }
+  .control h3 { font-size: .97rem; color: var(--navy); margin-bottom: 4px; }
+  .control p { margin-bottom: 0; color: var(--tenue); }
+
+  .glosario { display: grid; gap: 14px; margin: 18px 0 10px; }
+  .glosario dt { font-weight: 700; color: var(--navy); }
+  .glosario dd { color: var(--tenue); font-size: .95rem; margin-top: 3px; }
+
+  @media (max-width: 620px) {
+    .control { grid-template-columns: 1fr; gap: 6px; }
+  }
+</style>

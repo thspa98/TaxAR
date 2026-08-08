@@ -1,0 +1,165 @@
+{
+ "generado": "2026-08-08T19:34:07+00:00",
+ "universo": "apnf",
+ "tipo_dato": "ejecutado",
+ "base_contable": "devengado",
+ "unidad": "millones de pesos corrientes",
+ "cobertura": {
+  "jurisdicciones": 24,
+  "anio_desde": 2005,
+  "anio_hasta": 2025,
+  "anio_referencia": 2025,
+  "anio_ultimo_completo": 2024,
+  "sin_reporte": {
+   "2025": [
+    "la-pampa"
+   ]
+  }
+ },
+ "advertencia_comparabilidad": "Todas las cifras corresponden al mismo universo (Administración Pública No Financiera), el mismo tipo de dato (ejecutado) y la misma base contable (devengado). Mezclar universos distintos cambia los resultados de forma drástica: el resultado financiero de Córdoba 2026 es 439.906 M en administración central pero 12.996 M contando la APNF, porque la Caja de Jubilaciones tiene un déficit de 418.575 M. Es una diferencia de 34 veces.",
+ "fuentes": {
+  "serie_aif": {
+   "nombre": "Serie AIF-APNF de las provincias, 2005-2025",
+   "organismo": "Dirección Nacional de Coordinación Fiscal con las Provincias (MECON)",
+   "url": "https://www.argentina.gob.ar/economia/sechacienda/coordinacion-fiscal-provincial/ejecucion-presupuestaria-provincial",
+   "cobertura": "24 jurisdicciones, 2005-2025, ejecución devengada, APNF, en millones de $",
+   "revisado": "2026-08-03"
+  },
+  "poblacion_proyecciones": {
+   "nombre": "Proyecciones de población por provincia 2010-2040",
+   "organismo": "INDEC",
+   "url": "https://www.indec.gob.ar/ftp/cuadros/poblacion/c1_proyecciones_prov_2010_2040.xls",
+   "cobertura": "24 jurisdicciones, 2010-2040, base Censo 2010",
+   "revisado": "2026-08-03"
+  },
+  "poblacion_censo": {
+   "nombre": "Censo Nacional de Población 2022 — cuadro resumen",
+   "organismo": "INDEC",
+   "url": "https://www.indec.gob.ar/ftp/cuadros/poblacion/c2022_tp_c_resumen.xlsx",
+   "cobertura": "24 jurisdicciones, conteo real 2022",
+   "revisado": "2026-08-03"
+  },
+  "serie_ff": {
+   "nombre": "Gasto por finalidad y función de las provincias, 2005-2024",
+   "organismo": "Dirección Nacional de Coordinación Fiscal con las Provincias (MECON)",
+   "url": "https://www.argentina.gob.ar/economia/sechacienda/coordinacion-fiscal-provincial/ejecucion-presupuestaria-provincial",
+   "cobertura": "24 jurisdicciones, 2005-2024, APNF, en millones de $",
+   "revisado": "2026-08-05"
+  },
+  "alicuotas": {
+   "nombre": "Alícuotas de impuestos provinciales",
+   "organismo": "Compilación propia a partir de las leyes impositivas provinciales",
+   "url": "",
+   "cobertura": "24 jurisdicciones · Ingresos Brutos y Sellos",
+   "revisado": "2026-08-04"
+  },
+  "mapa": {
+   "nombre": "Capa Provincia del Instituto Geográfico Nacional",
+   "organismo": "Instituto Geográfico Nacional de la República Argentina",
+   "url": "https://www.ign.gob.ar/",
+   "cobertura": "24 jurisdicciones · WGS 84 · proyección cónica de Albers · incluye Malvinas, Georgias del Sur, Sandwich del Sur y el Sector Antártico Argentino",
+   "revisado": "2026-08-06"
+  },
+  "ipc": {
+   "nombre": "Índice de Precios al Consumidor por región",
+   "organismo": "INDEC",
+   "url": "https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_aperturas.xls",
+   "cobertura": "6 regiones, desde dic-2016, base dic-2016=100",
+   "revisado": "2026-08-03"
+  }
+ },
+ "controles": [
+  {
+   "control": "cobertura_fiscal",
+   "severidad": "ok",
+   "detalle": "Las 24 jurisdicciones tienen serie fiscal."
+  },
+  {
+   "control": "cobertura_poblacion",
+   "severidad": "ok",
+   "detalle": "Las 24 jurisdicciones tienen población."
+  },
+  {
+   "control": "cobertura_mapa",
+   "severidad": "ok",
+   "detalle": "Las 24 jurisdicciones cruzan con el mapa del IGN por código INDEC."
+  },
+  {
+   "control": "mapa_slugs",
+   "severidad": "ok",
+   "detalle": "Cada provincia del mapa apunta a una ficha que existe."
+  },
+  {
+   "control": "mapa_slugs_distintos",
+   "severidad": "aviso",
+   "detalle": "El mapa usa otro slug para 2 jurisdicción(es); se usa el del sitio: Ciudad Autónoma de Buenos Aires (el mapa la llama 'ciudad-autonoma-de-buenos-aires'), Tierra del Fuego, Antártida e Islas del Atlántico Sur (el mapa la llama 'tierra-del-fuego-antartida-e-islas-del-atlantico-sur')."
+  },
+  {
+   "control": "alicuotas_cobertura",
+   "severidad": "ok",
+   "detalle": "Las 24 jurisdicciones tienen alícuotas, para 4 impuestos."
+  },
+  {
+   "control": "alicuotas_rango",
+   "severidad": "ok",
+   "detalle": "Todas las alícuotas caen dentro de un rango plausible."
+  },
+  {
+   "control": "finalidad_cobertura",
+   "severidad": "ok",
+   "detalle": "Las 24 jurisdicciones tienen gasto por finalidad (480 años-jurisdicción)."
+  },
+  {
+   "control": "finalidad_suma_total",
+   "severidad": "ok",
+   "detalle": "En todas las series las cinco finalidades suman el total del archivo."
+  },
+  {
+   "control": "finalidad_suma_social",
+   "severidad": "ok",
+   "detalle": "En todas las series las funciones suman exactamente Servicios sociales."
+  },
+  {
+   "control": "suma_consolidado",
+   "severidad": "ok",
+   "detalle": "La suma de las jurisdicciones reproduce el Consolidado oficial en 21 años (peor diferencia: 0.000%)."
+  },
+  {
+   "control": "identidad_contable",
+   "severidad": "ok",
+   "detalle": "Las 503 series cumplen Ingresos − Gastos = Resultado financiero."
+  },
+  {
+   "control": "desglose_vs_total",
+   "severidad": "ok",
+   "detalle": "En todas las series el desglose por categoría cierra dentro del total."
+  },
+  {
+   "control": "duplicados",
+   "severidad": "ok",
+   "detalle": "No hay años consecutivos idénticos."
+  },
+  {
+   "control": "anios_sin_reporte",
+   "severidad": "aviso",
+   "detalle": "Años descartados por venir con todos los valores en cero — la jurisdicción no reportó. Se omiten en vez de cargarse como cero, que los haría aparecer como el gasto más bajo del país: La Pampa (2025)",
+   "afectados": {
+    "la-pampa": [
+     2025
+    ]
+   }
+  },
+  {
+   "control": "ajuste_censal",
+   "severidad": "ok",
+   "detalle": "Población reescalada al Censo 2022. Mayores correcciones sobre la proyección de INDEC: Santa Cruz -12.1%, Chaco -8.0%, Chubut -7.3%, Corrientes +6.4%. Sin este ajuste los rankings por habitante quedarían mal ordenados."
+  },
+  {
+   "control": "deflactabilidad",
+   "severidad": "aviso",
+   "detalle": "288 de 503 series no se pueden expresar en pesos constantes: el IPC oficial de INDEC arranca en dic-2016. El sitio muestra 'sin dato' en vez de estimar un número.",
+   "deflactables": 215,
+   "no_deflactables": 288
+  }
+ ]
+}

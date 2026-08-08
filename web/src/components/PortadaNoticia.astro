@@ -1,0 +1,138 @@
+---
+/**
+ * PortadaNoticia.astro — La imagen de cada nota, dibujada con datos.
+ *
+ * En vez de fotos de archivo —un martillo, una calculadora, señores dándose la
+ * mano— cada nota lleva una portada gráfica que dice algo: la forma del dato
+ * del que habla. Se dibujan en SVG, así que no pesan nada, se ven nítidas en
+ * cualquier pantalla y no hay que pagar licencias ni buscar imágenes.
+ */
+interface Props {
+  variante: 'barras' | 'mapa' | 'linea' | 'balanza' | 'aviso';
+  cifra: string;
+  pie: string;
+  categoria: string;
+  color: string;
+  alto?: number;
+}
+const { variante, cifra, pie, categoria, color, alto = 200 } = Astro.props;
+
+// Alturas de las barras: decrecientes, como casi todo ranking real.
+const barras = [92, 74, 63, 55, 44, 38, 30, 22, 16, 10];
+// Serie que sube en nominal y baja en constante.
+const sube = [12, 20, 31, 45, 62, 78, 88, 95];
+const baja = [78, 74, 70, 66, 60, 55, 52, 48];
+---
+
+<div class="portada" style={`--acento:${color};height:${alto}px`}>
+  <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" role="img"
+       aria-label={`Ilustración: ${pie}`}>
+    <defs>
+      <linearGradient id={`g-${variante}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#26375C" />
+        <stop offset="100%" stop-color="#16233C" />
+      </linearGradient>
+    </defs>
+    <rect width="400" height="200" fill={`url(#g-${variante})`} />
+
+    {variante === 'barras' && (
+      <g>
+        {barras.map((h, i) => (
+          <rect x={22 + i * 37} y={190 - h * 1.5} width="24" height={h * 1.5}
+                rx="3" fill={i === 0 ? color : '#3B5998'}
+                opacity={i === 0 ? 1 : 0.34 + (barras.length - i) * 0.045} />
+        ))}
+      </g>
+    )}
+
+    {variante === 'linea' && (
+      <g fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <polyline stroke="#D4AF37" opacity="0.85"
+                  points={sube.map((v, i) => `${28 + i * 50},${180 - v * 1.5}`).join(' ')} />
+        <polyline stroke={color}
+                  points={baja.map((v, i) => `${28 + i * 50},${180 - v * 1.5}`).join(' ')} />
+        {baja.map((v, i) => (
+          <circle cx={28 + i * 50} cy={180 - v * 1.5} r="3.5" fill={color} stroke="none" />
+        ))}
+      </g>
+    )}
+
+    {variante === 'balanza' && (
+      <g stroke="#3B5998" stroke-width="3" fill="none" stroke-linecap="round">
+        <line x1="200" y1="46" x2="200" y2="164" />
+        <line x1="92" y1="76" x2="308" y2="118" />
+        <circle cx="200" cy="46" r="6" fill={color} stroke="none" />
+        <path d="M62 76 L122 76 L104 122 Q92 134 80 122 Z" fill={color} opacity="0.9" stroke="none" />
+        <path d="M278 118 L338 118 L322 150 Q308 160 294 150 Z" fill="#3B5998" opacity="0.55" stroke="none" />
+        <line x1="150" y1="164" x2="250" y2="164" />
+      </g>
+    )}
+
+    {variante === 'mapa' && (
+      <g>
+        {[...Array(24)].map((_, i) => {
+          const c = i % 6, f = Math.floor(i / 6);
+          return (
+            <rect x={40 + c * 55} y={34 + f * 38} width="44" height="28" rx="4"
+                  fill={i === 4 || i === 13 ? color : '#3B5998'}
+                  opacity={i === 4 || i === 13 ? 1 : 0.2 + (i % 5) * 0.11} />
+          );
+        })}
+      </g>
+    )}
+
+    {variante === 'aviso' && (
+      <g>
+        {[...Array(24)].map((_, i) => {
+          const c = i % 8, f = Math.floor(i / 8);
+          const falta = i === 18;
+          return (
+            <rect x={26 + c * 45} y={44 + f * 42} width="34" height="30" rx="4"
+                  fill={falta ? 'none' : '#3B5998'}
+                  stroke={falta ? color : 'none'}
+                  stroke-width={falta ? 2.5 : 0}
+                  stroke-dasharray={falta ? '5 4' : ''}
+                  opacity={falta ? 1 : 0.42} />
+          );
+        })}
+      </g>
+    )}
+
+    <rect width="400" height="200" fill="url(#velo)" opacity="0" />
+  </svg>
+
+  <div class="capa">
+    <span class="cat" style={`background:${color}`}>{categoria}</span>
+    <div class="cifra-caja">
+      <span class="display cifra">{cifra}</span>
+      <span class="pie">{pie}</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .portada {
+    position: relative; overflow: hidden;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: var(--navy);
+  }
+  .portada svg { width: 100%; height: 100%; display: block; }
+  .capa {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 14px 18px;
+    background: linear-gradient(180deg, rgba(22,35,60,.15) 0%, rgba(22,35,60,.82) 62%, rgba(22,35,60,.95) 100%);
+  }
+  .cat {
+    align-self: flex-start;
+    font-size: .68rem; font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; color: #fff;
+    padding: 4px 11px; border-radius: 999px;
+  }
+  .cifra-caja { display: flex; flex-direction: column; }
+  .cifra {
+    font-size: clamp(1.9rem, 5vw, 2.5rem); color: #fff; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .pie { font-size: .78rem; color: #B7C6DE; margin-top: 3px; }
+</style>

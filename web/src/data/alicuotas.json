@@ -1,0 +1,640 @@
+{
+ "impuestos": {
+  "iibb-comercio": {
+   "etiqueta": "Ingresos Brutos — comercio y servicios",
+   "corto": "IIBB comercio",
+   "explica": "Se cobra sobre la facturación de cada negocio, en cada etapa de la cadena. No lo pagás vos directamente, pero está incorporado en el precio de casi todo lo que comprás: es el impuesto provincial que más recauda y el que más se nota en el bolsillo sin que se vea.",
+   "quien": "Lo paga el comercio y se traslada al precio",
+   "base": "sobre la facturación",
+   "color": "#1A2B48"
+  },
+  "iibb-industria": {
+   "etiqueta": "Ingresos Brutos — industria y producción primaria",
+   "corto": "IIBB industria",
+   "explica": "La misma lógica, pero para fábricas y producción agropecuaria. Casi todas las provincias la tienen mucho más baja —a veces en cero— para no encarecer lo que se produce dentro de su territorio.",
+   "quien": "Lo paga la industria radicada en la provincia",
+   "base": "sobre la facturación",
+   "color": "#2D4A7A"
+  },
+  "sellos-contratos": {
+   "etiqueta": "Sellos sobre contratos",
+   "corto": "Sellos contratos",
+   "explica": "Se paga al firmar un contrato: un alquiler, un préstamo, un acuerdo comercial. Es de los pocos impuestos provinciales que una persona común paga de forma consciente y de una sola vez.",
+   "quien": "Lo pagan las partes que firman",
+   "base": "sobre el monto total del contrato",
+   "color": "#D4AF37"
+  },
+  "sellos-inmuebles": {
+   "etiqueta": "Sellos sobre compraventa de inmuebles",
+   "corto": "Sellos inmuebles",
+   "explica": "Lo que se paga al escriturar una casa o un departamento, además de los honorarios y los gastos. Sobre el precio de una propiedad, un punto porcentual son muchos pesos.",
+   "quien": "Se reparte entre comprador y vendedor",
+   "base": "sobre el precio de la operación",
+   "color": "#0F766E"
+  }
+ },
+ "orden": [
+  "iibb-comercio",
+  "iibb-industria",
+  "sellos-contratos",
+  "sellos-inmuebles"
+ ],
+ "bases": {
+  "inmobiliario": {
+   "etiqueta": "Inmobiliario",
+   "estandar": "Valuación fiscal catastral: el valor de la tierra más el de la superficie edificada, según el registro de la provincia.",
+   "por_que_importa": "La valuación catastral casi nunca coincide con el precio de mercado, y cada provincia la actualiza cuando quiere. Dos provincias con la misma alícuota pueden cobrar montos muy distintos por la misma casa.",
+   "variantes": [
+    [
+     "CABA",
+     "Usa la Valuación Fiscal Homogénea (VFH) multiplicada por un coeficiente de revaluación que se fija cada año."
+    ],
+    [
+     "Buenos Aires",
+     "Aplica la valuación catastral pero ajustada por el Valor Inmobiliario de Referencia (VIR)."
+    ],
+    [
+     "Todas",
+     "Los terrenos baldíos pagan un recargo de entre 100% y 300% extra sobre la base de la tierra, para desalentar la especulación."
+    ],
+    [
+     "Buenos Aires y Córdoba",
+     "Impuesto complementario: suman las valuaciones de todos los inmuebles de un mismo titular y aplican una alícuota más alta sobre ese total. Tener tres propiedades chicas no paga lo mismo que tres dueños distintos con una cada uno."
+    ]
+   ],
+   "especiales": [
+    "CABA",
+    "Buenos Aires",
+    "Córdoba",
+    "Santa Fe",
+    "Mendoza"
+   ]
+  },
+  "automotor": {
+   "etiqueta": "Automotor (patente)",
+   "estandar": "La tabla de valuación de la DNRPA, el registro nacional del automotor. Es la misma para todo el país.",
+   "por_que_importa": "Que la base sea nacional hace a la patente el más comparable de los cuatro: si dos provincias usan la tabla DNRPA, la diferencia de lo que pagás por el mismo auto es la diferencia de alícuota.",
+   "variantes": [
+    [
+     "23 de 24 jurisdicciones",
+     "Usan directamente la tabla DNRPA para autos particulares."
+    ],
+    [
+     "CABA y Buenos Aires",
+     "Suelen aplicar coeficientes de ajuste propios cuando la tabla nacional se aparta del valor de mercado."
+    ],
+    [
+     "Córdoba, Santa Fe, Mendoza y Entre Ríos",
+     "Para camiones y colectivos no usan el valor comercial sino el peso, la capacidad de carga o la cantidad de ejes."
+    ]
+   ],
+   "especiales": [
+    "Buenos Aires",
+    "CABA",
+    "Córdoba",
+    "Santa Fe",
+    "Mendoza",
+    "Entre Ríos"
+   ]
+  }
+ },
+ "datos": {
+  "buenos-aires": {
+   "iibb-comercio": {
+    "min": 3.5,
+    "max": 5.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.5,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.2,
+    "max": 1.2,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 3.6,
+    "max": 3.6,
+    "rango": false
+   }
+  },
+  "caba": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 5.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.5,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 3.5,
+    "max": 3.5,
+    "rango": false
+   }
+  },
+  "catamarca": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 4.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "chaco": {
+   "iibb-comercio": {
+    "min": 3.5,
+    "max": 4.5,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "chubut": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 4.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "cordoba": {
+   "iibb-comercio": {
+    "min": 4.0,
+    "max": 4.75,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.5,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.5,
+    "max": 1.5,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 1.5,
+    "max": 1.8,
+    "rango": true
+   }
+  },
+  "corrientes": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 3.5,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "entre-rios": {
+   "iibb-comercio": {
+    "min": 3.5,
+    "max": 4.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.5,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "formosa": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 3.5,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "jujuy": {
+   "iibb-comercio": {
+    "min": 3.5,
+    "max": 4.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "la-pampa": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 4.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "la-rioja": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 3.5,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "mendoza": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 4.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.5,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.5,
+    "max": 1.5,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.5,
+    "max": 2.5,
+    "rango": false
+   }
+  },
+  "misiones": {
+   "iibb-comercio": {
+    "min": 4.5,
+    "max": 5.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 2.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.5,
+    "max": 2.5,
+    "rango": false
+   }
+  },
+  "neuquen": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 4.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "rio-negro": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 4.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "salta": {
+   "iibb-comercio": {
+    "min": 3.6,
+    "max": 4.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.2,
+    "max": 1.2,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.5,
+    "max": 2.5,
+    "rango": false
+   }
+  },
+  "san-juan": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 3.5,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "san-luis": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 3.5,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "santa-cruz": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 4.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "santa-fe": {
+   "iibb-comercio": {
+    "min": 4.5,
+    "max": 4.5,
+    "rango": false
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.5,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.5,
+    "max": 2.5,
+    "rango": false
+   }
+  },
+  "santiago-del-estero": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 3.5,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "tierra-del-fuego": {
+   "iibb-comercio": {
+    "min": 3.0,
+    "max": 3.5,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.0,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 0.8,
+    "max": 0.8,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.0,
+    "max": 2.0,
+    "rango": false
+   }
+  },
+  "tucuman": {
+   "iibb-comercio": {
+    "min": 3.5,
+    "max": 5.0,
+    "rango": true
+   },
+   "iibb-industria": {
+    "min": 0.0,
+    "max": 1.5,
+    "rango": true
+   },
+   "sellos-contratos": {
+    "min": 1.0,
+    "max": 1.0,
+    "rango": false
+   },
+   "sellos-inmuebles": {
+    "min": 2.5,
+    "max": 2.5,
+    "rango": false
+   }
+  }
+ },
+ "fuente": {
+  "nombre": "Alícuotas de impuestos provinciales",
+  "organismo": "Compilación propia a partir de las leyes impositivas provinciales",
+  "url": "",
+  "cobertura": "24 jurisdicciones · Ingresos Brutos y Sellos",
+  "revisado": "2026-08-04"
+ },
+ "revisada_por_terceros": false,
+ "advertencia": "Estas alícuotas son una compilación a partir de las leyes impositivas provinciales, no una publicación oficial única como el resto de los datos del sitio. Cada provincia tiene además alícuotas diferenciales por nivel de facturación, por actividad y por si el contribuyente está o no radicado en la jurisdicción, así que el número que te toca puede diferir. Si ves un error, escribinos: se corrige."
+}

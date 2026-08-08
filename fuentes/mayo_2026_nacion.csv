@@ -1,0 +1,25 @@
+categoria_raw,tipo,monto
+Aportes y contribuciones a la seguridad social,ingreso,4736191
+Ganancias,ingreso,2970423
+IVA neto de reintegros,ingreso,2433370
+Débitos y créditos,ingreso,1419595
+Derechos de exportación,ingreso,545337
+Derechos de importación,ingreso,394152
+Impuestos internos,ingreso,135477
+Bienes personales,ingreso,27837
+Resto tributarios,ingreso,872399
+Rentas de la propiedad,ingreso,435540
+Ingresos no tributarios,ingreso,380800
+Otros ingresos corrientes,ingreso,47536
+Ingresos de capital,ingreso,13820
+Jubilaciones y pensiones contributivas,gasto,5253062
+Pensiones no contributivas,gasto,850633
+Asignación universal para protección social,gasto,615418
+Prestaciones del INSSJP,gasto,650633
+Otros programas sociales,gasto,953150
+Energía,gasto,523417
+Transporte,gasto,258687
+Transferencias a provincias,gasto,760199
+Transferencias a universidades,gasto,780600
+Remuneraciones,gasto,1618197
+Gastos de capital,gasto,183519

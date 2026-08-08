@@ -1,0 +1,380 @@
+---
+import Base from '../layouts/Base.astro';
+import Explicacion from '../components/Explicacion.astro';
+import Fuente from '../components/Fuente.astro';
+import TarjetaDato from '../components/TarjetaDato.astro';
+import CarruselNoticias from '../components/charts/CarruselNoticias.jsx';
+import MapaIGN from '../components/charts/MapaIGN.jsx';
+import ScriptMapa from '../components/ScriptMapa.astro';
+import {
+  ANIOS, ANIO_ACTUAL, JURISDICCIONES, MAPA, META, avisoFaltantes, destacados,
+  faltantes, fila, jur, puesto, ranking, rankingConNombres,
+} from '../lib/datos';
+import { CATEGORIA_COLOR, NOTICIAS } from '../lib/noticias';
+import { millones, num, pct, pesos, veces } from '../lib/formato';
+
+const A = ANIO_ACTUAL;
+
+// --- Los tres contrastes que abren el sitio ---------------------------------
+const pc = ranking('gasto_per_capita', A);
+const primeroPC = pc[0];
+const ultimoPC = pc[pc.length - 1];
+const brechaPC = veces(primeroPC.valor, ultimoPC.valor);
+
+const dep = ranking('dependencia_nacion', A);
+const masDep = dep[0];
+const menosDep = dep[dep.length - 1];
+const brechaDep = veces(masDep.valor, menosDep.valor);
+
+const totales = ranking('gasto_total', A);
+const bsas = { total: puesto('gasto_total', 'buenos-aires', A), pc: puesto('gasto_per_capita', 'buenos-aires', A) };
+
+// --- Vista previa: los 6 extremos del ranking per cápita --------------------
+const topPC = rankingConNombres('gasto_per_capita', A);
+const extremos = [...topPC.slice(0, 3), null, ...topPC.slice(-3)];
+
+const gastoPais = totales.reduce((s, r) => s + r.valor, 0);
+const faltan = faltantes(A);
+const aviso = avisoFaltantes(A);
+
+const DESTACADOS = destacados(A, 5);
+
+// El mapa de la home recibe los mismos datos que /provincias.
+const datosMapa: Record<string, Record<string, any>> = {};
+for (const anio of ANIOS) {
+  const delAnio: Record<string, any> = {};
+  for (const slug of Object.keys(JURISDICCIONES)) {
+    const fx = fila(slug, anio);
+    if (!fx) continue;
+    delAnio[slug] = {
+      nombre: jur(slug).nombre,
+      corto: jur(slug).corto,
+      poblacion: fx.poblacion,
+      gastos_totales: fx.gastos_totales,
+      gasto_per_capita: fx.gasto_per_capita,
+      impuestos_por_habitante: fx.impuestos_por_habitante,
+      dependencia_nacion: fx.dependencia_nacion,
+      resultado_sobre_ingresos: fx.resultado_sobre_ingresos,
+    };
+  }
+  datosMapa[String(anio)] = delAnio;
+}
+---
+
+<Base
+  titulo="En qué gastan las provincias argentinas"
+  descripcion={`Gasto, deuda y dependencia de la Nación de las 24 jurisdicciones argentinas en ${A}, con datos oficiales y explicaciones para cualquiera.`}
+>
+  <ScriptMapa />
+  <!-- ================= PORTADA ================= -->
+  <section class="portada">
+    <div class="contenedor">
+      <p class="pildora pildora-oro">Datos oficiales · {META.cobertura.anio_desde}–{META.cobertura.anio_hasta}</p>
+
+      <h1 class="display titular">
+        Las provincias también<br />gastan tu plata
+      </h1>
+
+      <p class="bajada intro">
+        Casi toda la discusión pública sobre impuestos habla del Estado nacional. Pero las
+        provincias manejaron <strong>{millones(gastoPais)} de pesos</strong> en {A} y
+        deciden por su cuenta cuánto cobrarte de Ingresos Brutos, Inmobiliario y
+        Automotor. Acá podés ver qué hace cada una con ese dinero.
+      </p>
+
+      {faltan.length > 0 && (
+        <p class="nota-faltante">
+          Ese total suma {totales.length} jurisdicciones: {aviso}
+        </p>
+      )}
+
+      <div class="acciones">
+        <a href="#tu-provincia" class="boton primario">Buscá tu provincia en el mapa</a>
+        <a href="/ranking/" class="boton secundario">Ver quién gasta más por habitante</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= NOTICIAS ================= -->
+  <section class="seccion seccion-sm">
+    <div class="contenedor">
+      <CarruselNoticias client:visible notas={NOTICIAS} colores={CATEGORIA_COLOR} />
+    </div>
+  </section>
+
+  <!-- ================= TU PROVINCIA ================= -->
+  <section class="seccion caja-mapa" id="tu-provincia" style="padding-top:0">
+    <div class="contenedor">
+      <div class="tarjeta destacada-box">
+        <div class="box-cabeza">
+          <div>
+            <p class="etiqueta">Tu provincia</p>
+            <h2 class="display h-box">Empezá por dónde vivís</h2>
+            <p class="bajada">
+              Tocá cualquier jurisdicción para ver su ficha completa, o pasá a
+              <strong>Comparar dos</strong> y elegí el par que quieras: se ponen lado a lado
+              con la diferencia calculada.
+            </p>
+          </div>
+          <a href="/provincias/" class="boton-box">
+            Ir a la sección completa
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+
+        <div class="box-mapa">
+          <MapaIGN
+            client:visible
+            indecASlug={MAPA.indec_a_slug}
+            datos={datosMapa}
+            anio={A}
+            anios={[...ANIOS].reverse()}
+            atribucion={MAPA.atribucion}
+            notaTerritorio={MAPA.nota_territorio}
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CINCO DATOS ================= -->
+  <section class="seccion" style="padding-top:0">
+    <div class="contenedor">
+      <h2 class="display h-seccion">Cinco cifras que ordenan todo lo demás</h2>
+      <p class="bajada" style="max-width:660px;margin-bottom:26px">
+        Cada una es de una provincia distinta, y salen solas de los datos de {A}: si el año
+        que viene cambian los primeros puestos, cambian acá también.
+      </p>
+
+      <div class="cinco">
+        {DESTACADOS.map((d, i) => (
+          <a class:list={['dato-box', d.tono, i === 0 && 'grande']} href={d.href}>
+            <p class="d-jur">{d.jurisdiccion}</p>
+            <p class="ojo d-cifra">{d.cifra}</p>
+            <p class="d-tit">{d.titulo}</p>
+            <p class="d-det">{d.detalle}</p>
+          </a>
+        ))}
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion titulo="Por qué estas comparaciones son legítimas">
+          <p>
+            Comparar provincias es fácil de hacer mal. Un número puede corresponder a lo
+            que se <strong>planeó</strong> gastar o a lo que se <strong>gastó de verdad</strong>;
+            puede incluir o no a las cajas de jubilaciones; puede contarse cuando sale la
+            plata o cuando nace la obligación de pagar.
+          </p>
+          <p>
+            Todas las cifras del sitio corresponden al mismo universo, el mismo tipo de dato
+            y la misma base contable, y salen de un único archivo que publica el Ministerio de
+            Economía con las 24 jurisdicciones ya normalizadas.
+            <a href="/metodologia/">Cómo se calcula cada número</a>.
+          </p>
+        </Explicacion>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= EXTREMOS PER CÁPITA ================= -->
+  <section class="seccion" style="padding-top:0">
+    <div class="contenedor">
+      <div class="tarjeta tarjeta-p">
+        <h2 class="display h-tarjeta">Los extremos del gasto por habitante en {A}</h2>
+        <p class="bajada" style="margin-bottom:20px">
+          El gasto total dividido por la cantidad de habitantes. Es la única forma justa de
+          poner en la misma tabla a una provincia de {num(fila('buenos-aires', A)?.poblacion)} habitantes
+          y a otra de {num(fila('tierra-del-fuego', A)?.poblacion)}.
+        </p>
+
+        <div class="tabla-scroll">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th class="puesto">#</th>
+                <th>Jurisdicción</th>
+                <th class="der">Por habitante</th>
+                <th class="der">Gasto total</th>
+                <th style="width:32%">Proporción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {extremos.map((r) => r === null ? (
+                <tr class="corte"><td colspan="5">· · ·</td></tr>
+              ) : (
+                <tr>
+                  <td class="puesto">{r.puesto}</td>
+                  <td><strong>{r.nombre}</strong></td>
+                  <td class="der num">{pesos(r.valor)}</td>
+                  <td class="der num">{millones(fila(r.slug, A)?.gastos_totales)}</td>
+                  <td>
+                    <div class="barra-dato">
+                      <span style={`width:${(r.valor / topPC[0].valor) * 100}%;background:${r.puesto <= 3 ? 'var(--oro)' : 'var(--navy-2)'}`}></span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p class="chico" style="margin-top:16px;color:var(--tenue)">
+          Las provincias patagónicas encabezan por una razón concreta: cobran regalías por
+          el petróleo y el gas que se extrae de su territorio, y tienen poca población entre
+          la cual repartir ese ingreso.
+          <a href="/ranking/">Ver el ranking completo y su evolución</a>.
+        </p>
+
+        <Fuente clave="serie_aif" nota={`Población ajustada al Censo 2022`} />
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= QUÉ MÁS HAY ================= -->
+  <section class="seccion" style="padding-top:0">
+    <div class="contenedor">
+      <h2 class="display h-seccion">Qué podés averiguar acá</h2>
+      <div class="grilla g-3">
+        <a class="tarjeta tarjeta-p enlace-tarjeta" href="/provincias/">
+          <p class="etiqueta">Explorar</p>
+          <h3>Tu provincia en el mapa</h3>
+          <p class="bajada chico">
+            Tocá cualquier jurisdicción para ver su ficha, o elegí dos y comparalas lado a
+            lado. El mapa se pinta según el dato que elijas.
+          </p>
+        </a>
+        <a class="tarjeta tarjeta-p enlace-tarjeta" href="/ranking/">
+          <p class="etiqueta">Comparar</p>
+          <h3>Quién gasta más por habitante</h3>
+          <p class="bajada chico">
+            El ranking completo de las 24 jurisdicciones, año por año desde
+            {META.cobertura.anio_desde}, con el gasto ajustado por inflación para que las
+            series largas signifiquen algo.
+          </p>
+        </a>
+        <a class="tarjeta tarjeta-p enlace-tarjeta" href="/dependencia/">
+          <p class="etiqueta">Entender</p>
+          <h3>Cuánto depende cada provincia de la Nación</h3>
+          <p class="bajada chico">
+            Qué parte de los impuestos que maneja cada provincia recauda ella misma y qué
+            parte le llega de Buenos Aires. Explica buena parte de la política argentina.
+          </p>
+        </a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .portada {
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 62%, var(--navy-3) 100%);
+    color: #fff;
+    padding-block: 76px 66px;
+  }
+  .portada .pildora { background: rgba(212,175,55,.2); border-color: rgba(212,175,55,.45); color: var(--oro-claro); }
+  .titular { font-size: clamp(2.6rem, 7vw, 4.5rem); margin: 20px 0 22px; }
+  .intro { color: #CBD8EA; max-width: 660px; font-size: 1.13rem; }
+  .intro strong { color: #fff; font-weight: 600; }
+  .nota-faltante {
+    margin-top: 16px;
+    max-width: 660px;
+    font-size: .87rem;
+    color: #9FB3D0;
+    border-left: 2px solid rgba(212, 175, 55, .5);
+    padding-left: 13px;
+    line-height: 1.6;
+  }
+
+  .acciones { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 32px; }
+  .boton {
+    display: inline-block; padding: 13px 24px; border-radius: 999px;
+    font-weight: 600; font-size: .95rem; text-decoration: none;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .primario { background: var(--oro); color: #26200A; box-shadow: 0 6px 22px rgba(212,175,55,.36); }
+  .primario:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(212,175,55,.5); color: #26200A; }
+  .secundario { border: 1px solid rgba(255,255,255,.36); color: #fff; }
+  .secundario:hover { background: rgba(255,255,255,.11); color: #fff; }
+
+  .h-seccion { font-size: clamp(1.7rem, 3.4vw, 2.3rem); margin-bottom: 10px; color: var(--navy); }
+
+  /* --- box de Tu provincia --- */
+  .caja-mapa { padding-bottom: 42px; }
+  .destacada-box { border-top: 4px solid var(--oro); padding: 28px; }
+  .box-cabeza {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .h-box { font-size: clamp(1.6rem, 3.2vw, 2.1rem); color: var(--navy); margin: 5px 0 9px; }
+  .box-cabeza .bajada { max-width: 560px; font-size: 1rem; }
+  .box-cabeza strong { color: var(--navy); font-weight: 600; }
+  .boton-box {
+    display: inline-flex; align-items: center; gap: 9px;
+    background: var(--navy); color: #fff; text-decoration: none;
+    padding: 12px 22px; border-radius: 999px;
+    font-weight: 600; font-size: .93rem; white-space: nowrap;
+    transition: background .18s ease, transform .18s ease;
+  }
+  .boton-box:hover { background: var(--navy-2); color: #fff; transform: translateY(-2px); }
+  .box-mapa { border-top: 1px solid var(--borde); padding-top: 24px; }
+
+  /* --- cinco destacados ---
+     Todas las tarjetas del mismo ancho y del mismo alto. Antes las dos
+     primeras eran más grandes, lo que sugería una jerarquía que los datos no
+     tienen: las cinco cifras valen lo mismo. */
+  .cinco {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(196px, 1fr));
+    gap: 16px;
+    align-items: stretch;
+  }
+  .dato-box {
+    display: flex; flex-direction: column;
+    text-decoration: none; color: inherit;
+    background: var(--papel); border: 1px solid var(--borde);
+    border-left: 4px solid var(--navy-2);
+    border-radius: 0 var(--r-lg) var(--r-lg) 0;
+    padding: 20px 22px;
+    box-shadow: var(--sombra);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .dato-box:hover { transform: translateY(-3px); box-shadow: var(--sombra-lg); }
+  .dato-box.oro { border-left-color: var(--oro); }
+  .dato-box.deficit { border-left-color: var(--deficit); }
+  .dato-box.superavit { border-left-color: var(--superavit); }
+  .d-jur {
+    font-size: .72rem; font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--tenue);
+  }
+  /* La cifra se adapta al ancho de la tarjeta: con cinco columnas iguales,
+     un "$9.968.353" a 2,7rem se desbordaba. */
+  .d-cifra {
+    margin: 7px 0 4px; color: var(--navy);
+    font-size: clamp(1.45rem, 2.3vw, 1.95rem);
+    overflow-wrap: anywhere;
+  }
+  .dato-box.oro .d-cifra { color: #A8850F; }
+  .dato-box.deficit .d-cifra { color: var(--deficit); }
+  .dato-box.superavit .d-cifra { color: var(--superavit); }
+  .d-tit { font-weight: 700; color: var(--navy); font-size: 1.02rem; line-height: 1.3; }
+  /* margin-top:auto empuja el detalle al pie, así todas las tarjetas
+     terminan con el texto alineado aunque el título ocupe una línea más. */
+  .d-det {
+    font-size: .85rem; color: var(--tenue);
+    margin-top: auto; padding-top: 9px; line-height: 1.55;
+  }
+
+  @media (max-width: 620px) {
+    .cinco { grid-template-columns: 1fr; }
+    .d-cifra { font-size: 2rem; }
+    .destacada-box { padding: 20px; }
+    .boton-box { width: 100%; justify-content: center; }
+  }
+  .h-tarjeta { font-size: clamp(1.4rem, 2.8vw, 1.9rem); color: var(--navy); margin-bottom: 6px; }
+
+  .corte td { text-align: center; color: var(--tenue-2); letter-spacing: .5em; padding: 6px; }
+
+  .enlace-tarjeta { text-decoration: none; color: inherit; transition: transform .18s ease, box-shadow .18s ease; }
+  .enlace-tarjeta:hover { transform: translateY(-3px); box-shadow: var(--sombra-lg); }
+  .enlace-tarjeta h3 { font-size: 1.24rem; color: var(--navy); margin: 7px 0 9px; }
+</style>

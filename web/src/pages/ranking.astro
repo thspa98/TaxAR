@@ -1,0 +1,204 @@
+---
+import Base from '../layouts/Base.astro';
+import Desplegable from '../components/Desplegable.astro';
+import Explicacion from '../components/Explicacion.astro';
+import Fuente from '../components/Fuente.astro';
+import Termino from '../components/Termino.astro';
+import RankingInteractivo from '../components/charts/RankingInteractivo.jsx';
+import SerieNominalConstante from '../components/charts/SerieNominalConstante.jsx';
+import {
+  ANIO_ACTUAL, ANIOS, IPC, META, avisoFaltantes, faltantes,
+  fila, jur, puesto, ranking, rankingConNombres, serie,
+} from '../lib/datos';
+import { millones, num, pesos, veces } from '../lib/formato';
+
+const A = ANIO_ACTUAL;
+
+const porAnio: Record<string, any[]> = {};
+for (const a of ANIOS) porAnio[String(a)] = rankingConNombres('gasto_per_capita', a);
+
+const pc = ranking('gasto_per_capita', A);
+const primero = pc[0], ultimo = pc[pc.length - 1];
+const brecha = veces(primero.valor, ultimo.valor);
+
+const totales = ranking('gasto_total', A);
+const cuantas = pc.length;   // jurisdicciones con dato este año
+
+// Las que más cambian de puesto según se mire total o per cápita: el punto
+// central de la página.
+const saltos = totales.map((t) => {
+  const p = puesto('gasto_per_capita', t.slug, A)!;
+  return { slug: t.slug, total: t.puesto, percapita: p, salto: p - t.puesto };
+}).sort((a, b) => Math.abs(b.salto) - Math.abs(a.salto)).slice(0, 5);
+
+const serieBsAs = serie('buenos-aires');
+const anioBase = IPC.anio_base['GBA'];
+const aviso = avisoFaltantes(A);
+---
+
+<Base
+  titulo="Quién gasta más por habitante"
+  descripcion={`Ranking del gasto público por habitante de las 24 jurisdicciones argentinas en ${A}. ${jur(primero.slug).nombre} gasta ${brecha} veces lo de ${jur(ultimo.slug).nombre}.`}
+>
+  <section class="encabezado">
+    <div class="contenedor">
+      <p class="pildora pildora-oro">Ejecutado {META.cobertura.anio_desde}–{META.cobertura.anio_hasta}</p>
+      <h1 class="display titulo">Quién gasta más por habitante</h1>
+      <p class="bajada">
+        {jur(primero.slug).nombre} gastó <strong>{pesos(primero.valor)}</strong> por
+        <Termino clave="per_capita">habitante</Termino> en {A}. {jur(ultimo.slug).nombre},
+        <strong>{pesos(ultimo.valor)}</strong>. Son <strong>{brecha} veces</strong> de
+        diferencia entre habitantes del mismo país.
+      </p>
+      <p class="resumen-seccion"><b>Qué encontrás acá.</b> El ranking del gasto público por habitante, desde 2005 hasta hoy. Sirve para responder si tu provincia gasta mucho o poco comparada con el resto, dividiendo por la cantidad de gente que tiene que atender.</p>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="contenedor">
+
+      {aviso && (
+        <p class="aviso-dato">
+          <strong>Falta una jurisdicción en {A}:</strong> {aviso}
+          {' '}Por eso este ranking tiene {pc.length} y no 24. Elegí un año anterior para
+          verlas todas, o mirá <a href={`/provincia/${faltantes(A)[0]}/`}>su ficha</a>.
+        </p>
+      )}
+
+      <Desplegable titulo="Ranking completo del gasto por habitante" nota="Las 24 jurisdicciones. Se puede cambiar el año y filtrar por región." accion="Ver ranking">
+
+        <RankingInteractivo
+          client:visible
+          datosPorAnio={porAnio}
+          anios={ANIOS}
+          anioInicial={A}
+          unidad="pesos"
+          sufijo="por habitante"
+        />
+
+        <Fuente clave="serie_aif" nota="Población ajustada al Censo 2022" />
+      </Desplegable>
+
+      <div style="margin-top:26px">
+        <Explicacion titulo="Por qué dividir por habitantes cambia todo">
+          <p>
+            Decir que Buenos Aires es la provincia que más gasta es cierto y no significa
+            nada: también es la que tiene más habitantes que atender. Es como decir que una
+            familia de ocho gasta más en comida que una de dos.
+          </p>
+          <p>
+            Al dividir por población, el ranking se da vuelta. Buenos Aires pasa del puesto
+            {puesto('gasto_total', 'buenos-aires', A)} al {puesto('gasto_per_capita', 'buenos-aires', A)}.
+            Y aparecen arriba provincias chicas de la Patagonia, que cobran regalías por el
+            petróleo y el gas extraídos de su territorio y reparten ese ingreso entre pocos
+            habitantes.
+          </p>
+        </Explicacion>
+      </div>
+
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">Las que más cambian de lugar</h2>
+        <p class="bajada chico" style="margin-bottom:18px">
+          Cada jurisdicción ocupa dos puestos distintos: uno en el ranking de gasto total y
+          otro en el de gasto por habitante. Estas son las cinco donde esa diferencia es más
+          grande, en {A}.
+        </p>
+
+        <div class="tabla-scroll">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Jurisdicción</th>
+                <th class="der">Puesto por gasto total</th>
+                <th class="der">Puesto por habitante</th>
+                <th>Qué le pasa al dividir por población</th>
+              </tr>
+            </thead>
+            <tbody>
+              {saltos.map((s) => (
+                <tr>
+                  <td><strong>{jur(s.slug).corto}</strong></td>
+                  <td class="der num">{s.total}° de {cuantas}</td>
+                  <td class="der num">{s.percapita}° de {cuantas}</td>
+                  <td>
+                    <span class:list={['salto', s.salto > 0 ? 'baja' : 'sube']}>
+                      {s.salto > 0
+                        ? `Cae ${s.salto} puestos`
+                        : `Trepa ${Math.abs(s.salto)} puestos`}
+                    </span>
+                    <span class="salto-txt">
+                      {s.salto > 0
+                        ? `gasta mucho en total porque tiene mucha gente, pero poco por persona`
+                        : `gasta poco en total porque tiene poca gente, pero mucho por persona`}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Fuente clave="serie_aif" />
+      </div>
+
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">El gasto de Buenos Aires, con y sin inflación</h2>
+        <p class="bajada chico" style="margin-bottom:20px">
+          El mismo gasto, contado de dos maneras. Es el ejemplo más claro de por qué una
+          serie en pesos corrientes puede llevar a la conclusión exactamente opuesta.
+        </p>
+
+        <SerieNominalConstante client:visible serie={serieBsAs} anioBase={anioBase} />
+
+        <Fuente clave="ipc" nota={`Deflactado con el IPC de la región GBA, en pesos de ${anioBase}`} />
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion variante="atencion" titulo="Lo que este ranking todavía no te dice">
+          <p>
+            Gastar más por habitante no es bueno ni malo por sí solo. Una provincia con
+            territorio enorme y población dispersa necesita más plata por persona para
+            sostener escuelas y hospitales. Y este ranking no distingue entre gasto en
+            salud y gasto en publicidad oficial.
+          </p>
+          <p>
+            El desglose por finalidad — cuánto va a Salud, cuánto a Educación, cuánto a
+            Seguridad — requiere fuentes provincia por provincia y todavía está incompleto.
+            Cuando esté, esta página va a poder responder la pregunta que de verdad importa:
+            no cuánto se gasta, sino en qué.
+          </p>
+        </Explicacion>
+      </div>
+
+    </div>
+  </section>
+</Base>
+
+<style>
+  .encabezado { background: var(--navy); color: #fff; padding-block: 52px 44px; }
+  .encabezado .pildora { background: rgba(212,175,55,.2); border-color: rgba(212,175,55,.45); color: var(--oro-claro); }
+  .titulo { font-size: clamp(2.1rem, 5.4vw, 3.3rem); margin: 16px 0 14px; }
+  .resumen-seccion {
+    margin-top: 16px; max-width: 700px;
+    font-size: .93rem; line-height: 1.68; color: #9FB3D0;
+    border-left: 2px solid rgba(212, 175, 55, .55); padding-left: 14px;
+  }
+  .resumen-seccion b { color: var(--oro-claro); font-weight: 600; }
+  .encabezado .bajada { color: #CBD8EA; max-width: 640px; }
+  .encabezado strong { color: #fff; font-weight: 600; }
+  .h2 { font-size: clamp(1.35rem, 2.7vw, 1.8rem); color: var(--navy); margin-bottom: 5px; }
+  .salto { font-weight: 700; display: block; }
+  .salto.baja { color: var(--deficit); }
+  .salto.sube { color: var(--superavit); }
+  .salto-txt { display: block; font-size: .8rem; color: var(--tenue); line-height: 1.45; margin-top: 2px; }
+  .aviso-dato {
+    background: rgba(180, 83, 9, .07);
+    border: 1px solid rgba(180, 83, 9, .28);
+    border-left: 4px solid var(--alerta);
+    border-radius: var(--r-md);
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    font-size: .93rem;
+    line-height: 1.6;
+  }
+  .aviso-dato strong { color: var(--alerta); }
+</style>

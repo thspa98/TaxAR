@@ -1,0 +1,465 @@
+---
+import Base from '../layouts/Base.astro';
+import Desplegable from '../components/Desplegable.astro';
+import Explicacion from '../components/Explicacion.astro';
+import Fuente from '../components/Fuente.astro';
+import Termino from '../components/Termino.astro';
+import RankingInteractivo from '../components/charts/RankingInteractivo.jsx';
+import {
+  ANIOS, ANIO_ACTUAL, avisoFaltantes, fila, jur, ranking, rankingConNombres,
+} from '../lib/datos';
+import { millones, num, pct, pesos, veces } from '../lib/formato';
+
+const A = ANIO_ACTUAL;
+const aviso = avisoFaltantes(A);
+
+const porAnio: Record<string, any[]> = {};
+for (const a of ANIOS) porAnio[String(a)] = rankingConNombres('coparticipacion_por_habitante', a);
+
+const cop = ranking('coparticipacion_por_habitante', A);
+const primero = cop[0], ultimo = cop[cop.length - 1];
+const brecha = veces(primero.valor, ultimo.valor);
+const totalCop = cop.reduce((s, r) => s + (fila(r.slug, A)?.coparticipacion ?? 0), 0);
+
+// El índice de reparto: qué tajada recibe cada una comparada con su población.
+const reparto = cop.map((r) => {
+  const f = fila(r.slug, A)! as any;
+  return {
+    slug: r.slug,
+    nombre: jur(r.slug).nombre,
+    corto: jur(r.slug).corto,
+    porHab: r.valor,
+    shareCop: f.share_coparticipacion as number,
+    sharePob: f.share_poblacion as number,
+    indice: f.indice_reparto as number,
+  };
+}).filter((x) => x.indice != null).sort((a, b) => b.indice - a.indice);
+
+const maxIndice = Math.max(...reparto.map((x) => x.indice));
+const ganan = reparto.filter((x) => x.indice > 1).length;
+const arriba = reparto[0];
+const abajo = reparto[reparto.length - 1];
+---
+
+<Base
+  titulo="Coparticipación: cómo se reparte la plata entre las provincias"
+  descripcion={`Qué es la coparticipación federal, cómo funciona y cuánto recibe cada provincia argentina por habitante en ${A}.`}
+>
+  <section class="encabezado">
+    <div class="contenedor">
+      <p class="pildora pildora-oro">Coparticipación federal · {A}</p>
+      <h1 class="display titulo">¿Cómo se reparte la plata entre las provincias?</h1>
+      <p class="bajada">
+        La Nación giró <strong>{millones(totalCop)} de pesos</strong> a las provincias
+        en {A}. {arriba.nombre} recibió <strong>{pesos(arriba.porHab)}</strong> por
+        habitante y {abajo.nombre} <strong>{pesos(abajo.porHab)}</strong>: son
+        {' '}<strong>{brecha} veces</strong> de diferencia entre dos argentinos.
+      </p>
+      <p class="resumen-seccion"><b>Qué encontrás acá.</b> Cómo se reparte entre las provincias la plata que recauda la Nación: qué impuestos entran a la bolsa, en qué dos etapas se divide, y quién recibe más o menos de lo que le tocaría por su población.</p>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="contenedor">
+
+      <!-- ============ QUÉ ES ============ -->
+      <div class="tarjeta tarjeta-p">
+        <h2 class="display h2">Qué es la coparticipación, en tres pasos</h2>
+        <p class="bajada chico" style="margin-bottom:22px">
+          Cuando pagás IVA en el supermercado o Ganancias en tu sueldo, esa plata no se
+          queda entera en la Nación. Pero tampoco se reparte toda. El recorrido tiene tres
+          etapas, y en cada una se decide algo distinto.
+        </p>
+
+        <ol class="pasos">
+          <li>
+            <h3>Primero se define qué impuestos entran a la bolsa</h3>
+            <p>
+              Es la <strong><Termino clave="masa_coparticipable">masa coparticipable</Termino></strong>,
+              y no incluye todo lo que recauda el Estado nacional.
+            </p>
+
+            <div class="entra-no">
+              <div class="entra">
+                <p class="en-tit">Se reparten</p>
+                <ul>
+                  <li>IVA</li>
+                  <li>Ganancias</li>
+                  <li>Impuestos internos</li>
+                </ul>
+              </div>
+              <div class="no-entra">
+                <p class="en-tit">No se reparten</p>
+                <ul>
+                  <li>Retenciones a la exportación</li>
+                  <li>Derechos de importación</li>
+                  <li>Aportes a la seguridad social</li>
+                </ul>
+              </div>
+            </div>
+
+            <p class="ejemplo-caja">
+              Esa lista de la derecha no es un detalle contable: es de las decisiones más
+              pesadas del federalismo argentino. Las retenciones al agro las cobra la Nación
+              y <strong>no comparte un peso</strong>, aunque salgan del campo de Santa Fe,
+              Córdoba o Buenos Aires. Por eso cada vez que suben o bajan, las provincias
+              productoras reclaman.
+            </p>
+          </li>
+
+          <li>
+            <h3>Después se parte entre la Nación y el conjunto de las provincias</h3>
+            <p>
+              Es la <strong><Termino clave="distribucion_primaria">distribución primaria</Termino></strong>.
+              La Ley 23.548, de 1988, la fijó en cuatro tajadas:
+            </p>
+            <ul class="tajadas">
+              <li><b>42,34%</b> <span>queda en la Nación para financiar lo suyo</span></li>
+              <li><b>54,66%</b> <span>se reparte entre las 24 jurisdicciones</span></li>
+              <li><b>2%</b> <span>de recupero para cuatro provincias puntuales</span></li>
+              <li><b>1%</b> <span>al fondo de emergencia que maneja la Nación, los <Termino clave="atn">ATN</Termino></span></li>
+            </ul>
+            <p class="nota-tajadas">
+              Se suele decir que las provincias reciben "el 57%": es el 54,66% más el 2% de
+              recupero, que también va a jurisdicciones. Las dos cifras son correctas, sólo
+              que una junta las dos tajadas.
+            </p>
+          </li>
+
+          <li>
+            <h3>Y recién ahí se divide entre las provincias</h3>
+            <p>
+              Es la <strong><Termino clave="distribucion_secundaria">distribución secundaria</Termino></strong>,
+              y es la parte polémica: la ley no fija un criterio —población, pobreza,
+              territorio, nada— sino un <strong>porcentaje fijo para cada provincia</strong>,
+              escrito en el artículo 4 y negociado políticamente en 1988. Buenos Aires tiene
+              asignado alrededor del 21,7%, Santa Fe 8,7%, Córdoba 8,4%.
+            </p>
+          </li>
+        </ol>
+
+        <p class="cierre">
+          El giro es <strong>automático y diario</strong>, y la provincia lo usa en lo que
+          quiere: la ley no permite condicionarlo ni retenerlo. Cuando un gobierno nacional
+          modificó por decreto el porcentaje de una jurisdicción, el conflicto terminó en la
+          Corte Suprema.
+        </p>
+      </div>
+
+      <!-- ============ AUTOMÁTICAS VS DISCRECIONALES ============ -->
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">No toda la plata que manda la Nación es coparticipación</h2>
+        <p class="bajada chico" style="margin-bottom:22px">
+          Hay un segundo canal, mucho menos previsible, que explica buena parte de la
+          relación entre un gobernador y el gobierno nacional.
+        </p>
+
+        <div class="dos-canales">
+          <div class="canal auto">
+            <p class="canal-eti">Automáticas</p>
+            <h3>Coparticipación</h3>
+            <dl>
+              <div><dt>Cómo se decide</dt><dd>Por ley, con un porcentaje fijo</dd></div>
+              <div><dt>Cuándo llega</dt><dd>Todos los días, sin que nadie lo autorice</dd></div>
+              <div><dt>En qué se puede gastar</dt><dd>En lo que la provincia decida</dd></div>
+              <div><dt>Se puede cortar</dt><dd>No: la ley lo prohíbe</dd></div>
+            </dl>
+            <p class="canal-pie">
+              Es el <strong>piso garantizado</strong> de ingresos de cada provincia.
+            </p>
+          </div>
+
+          <div class="canal disc">
+            <p class="canal-eti">Discrecionales</p>
+            <h3><Termino clave="transferencias_discrecionales">Transferencias no automáticas</Termino></h3>
+            <dl>
+              <div><dt>Cómo se decide</dt><dd>Caso por caso, por el Poder Ejecutivo</dd></div>
+              <div><dt>Cuándo llega</dt><dd>Cuando se firma un convenio o se decide una partida</dd></div>
+              <div><dt>En qué se puede gastar</dt><dd>Sólo en lo que dice el convenio</dd></div>
+              <div><dt>Se puede cortar</dt><dd>Sí, de un año a otro</dd></div>
+            </dl>
+            <p class="canal-pie">
+              Obras públicas, asistencia por déficit, ATN, programas de salud, educación o
+              subsidios al transporte y la energía.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {aviso && <p class="aviso-dato" style="margin-top:22px"><strong>Falta una jurisdicción en {A}:</strong> {aviso}</p>}
+
+      <!-- ============ RANKING POR HABITANTE ============ -->
+      <div style="margin-top:26px"><Desplegable titulo="Ranking de coparticipación por habitante" nota="Las 24 jurisdicciones, año por año. Cuánto le llega a cada una de origen nacional dividido por su población." accion="Ver ranking">
+
+        <RankingInteractivo
+          client:visible
+          datosPorAnio={porAnio}
+          anios={ANIOS}
+          anioInicial={A}
+          unidad="pesos"
+          sufijo="por habitante"
+        />
+
+        <Fuente clave="serie_aif" nota="Recursos tributarios de origen nacional · población ajustada al Censo 2022" />
+      </Desplegable></div>
+
+      <!-- ============ EL ÍNDICE DE REPARTO ============ -->
+      <div style="margin-top:26px"><Desplegable titulo="Quién recibe más de lo que le tocaría por población" nota="Índice de reparto: 1,00 es recibir exactamente lo proporcional a la gente que tiene." accion="Ver tabla">
+
+        <div class="tabla-scroll">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Jurisdicción</th>
+                <th class="der">% de la coparticipación</th>
+                <th class="der">% de la población</th>
+                <th class="der">Índice</th>
+                <th style="width:26%">Reparto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reparto.map((x) => (
+                <tr class:list={[(x.indice === maxIndice || x.slug === abajo.slug) && 'destacada']}>
+                  <td><a href={`/provincia/${x.slug}/`}><strong>{x.corto}</strong></a></td>
+                  <td class="der num">{num(x.shareCop, 2)}%</td>
+                  <td class="der num">{num(x.sharePob, 2)}%</td>
+                  <td class="der num">
+                    <strong class={x.indice >= 1 ? 'arriba' : 'debajo'}>{num(x.indice, 2)}</strong>
+                  </td>
+                  <td>
+                    <div class="eje">
+                      <span class="linea"></span>
+                      <span
+                        class:list={['barra-eje', x.indice >= 1 ? 'pos' : 'neg']}
+                        style={x.indice >= 1
+                          ? `left:50%;width:${Math.min(50, (x.indice - 1) / (maxIndice - 1) * 50)}%`
+                          : `right:50%;width:${(1 - x.indice) * 50}%`}
+                      ></span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Fuente clave="serie_aif" />
+      </Desplegable></div>
+
+      <div style="margin-top:26px">
+        <Explicacion titulo="Por qué el reparto no sigue a la población">
+          <p>
+            {ganan} de las {reparto.length} jurisdicciones reciben más de lo proporcional a
+            su población, y {reparto.length - ganan} reciben menos. {arriba.nombre} recibe
+            {' '}<strong>{num(arriba.indice, 1)} veces</strong> lo que le tocaría por su
+            cantidad de habitantes; {abajo.nombre}, apenas {num(abajo.indice, 2)}.
+          </p>
+          <p>
+            En parte es deliberado: la coparticipación tiene un fin redistributivo, y darle
+            más por habitante a una provincia pobre y despoblada que a una rica y grande es
+            una decisión defendible. Sostener una escuela rural cuesta más por alumno que
+            una escuela urbana.
+          </p>
+          <p>
+            Pero los porcentajes se escribieron en <strong>1988 y no se actualizaron nunca</strong>.
+            No se mueven cuando cambia la población, la pobreza o la economía de una
+            provincia. Una jurisdicción que creció mucho desde entonces recibe hoy, por
+            habitante, bastante menos de lo que recibía cuando se firmó la ley — sin que nadie
+            haya decidido eso.
+          </p>
+        </Explicacion>
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion variante="atencion" titulo="Una reforma que la Constitución ordenó hace treinta años">
+          <p>
+            La reforma constitucional de 1994 incorporó el artículo 75 inciso 2, que exige
+            una nueva ley de coparticipación acordada entre la Nación y las provincias,
+            basada en criterios objetivos de reparto. Puso plazo: <strong>fines de 1996</strong>.
+          </p>
+          <p>
+            Nunca se sancionó. La ley que rige hoy sigue siendo la de 1988, que en su propio
+            texto se definía como un régimen <em>transitorio</em>. El tema volvió a la agenda
+            —quedó mencionado en el Pacto de Mayo de 2024 y hay proyectos en debate en el
+            Senado— pero cualquier reforma exige que las provincias que hoy reciben de más
+            acepten recibir menos, y por eso lleva tres décadas trabada.
+          </p>
+        </Explicacion>
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion titulo="Por qué esto te afecta aunque no te interese la política fiscal">
+          <p>
+            Hay un concepto que resume el problema:
+            {' '}<strong><Termino clave="correspondencia_fiscal">correspondencia fiscal</Termino></strong>.
+            Es la relación entre lo que un gobierno le cobra a sus propios vecinos y lo que
+            gasta.
+          </p>
+          <p>
+            Cuando una provincia financia su gasto con impuestos que cobra ella, el votante
+            siente en el bolsillo cada peso que su gobernador decide gastar, y eso lo vuelve
+            exigente. Cuando el 90% llega de una transferencia automática, ese vínculo se
+            corta: el costo lo paga alguien lejano y difuso. No es una acusación a ninguna
+            provincia en particular —es cómo funcionan los incentivos— pero explica por qué
+            la <a href="/dependencia/">dependencia de la Nación</a> importa más allá de la
+            contabilidad.
+          </p>
+        </Explicacion>
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion variante="atencion" titulo="Qué no está midiendo esta página">
+          <p>
+            Las cifras salen de lo que <strong>cada provincia declaró haber recibido</strong> de
+            origen nacional, no de los coeficientes de la ley. La diferencia importa: además
+            de la coparticipación pura hay leyes especiales, fondos con asignación específica
+            y transferencias que no siguen el artículo 4.
+          </p>
+          <p>
+            Tampoco entra acá la <strong>transferencia discrecional</strong> —los envíos que la
+            Nación decide caso por caso— que es donde se juega buena parte de la negociación
+            política y que requiere otra fuente para separarla.
+          </p>
+        </Explicacion>
+      </div>
+
+    </div>
+  </section>
+</Base>
+
+<style>
+  .encabezado { background: var(--navy); color: #fff; padding-block: 52px 44px; }
+  .encabezado .pildora { background: rgba(212,175,55,.2); border-color: rgba(212,175,55,.45); color: var(--oro-claro); }
+  .titulo { font-size: clamp(2rem, 5vw, 3.1rem); margin: 16px 0 14px; }
+  .resumen-seccion {
+    margin-top: 16px; max-width: 700px;
+    font-size: .93rem; line-height: 1.68; color: #9FB3D0;
+    border-left: 2px solid rgba(212, 175, 55, .55); padding-left: 14px;
+  }
+  .resumen-seccion b { color: var(--oro-claro); font-weight: 600; }
+  .encabezado .bajada { color: #CBD8EA; max-width: 690px; }
+  .encabezado strong { color: #fff; font-weight: 600; }
+  .h2 { font-size: clamp(1.35rem, 2.7vw, 1.8rem); color: var(--navy); margin-bottom: 5px; }
+
+  .pasos { list-style: none; counter-reset: p; }
+  .pasos > li {
+    counter-increment: p;
+    position: relative;
+    padding: 0 0 22px 56px;
+    border-left: 2px solid var(--borde);
+    margin-left: 15px;
+  }
+  .pasos > li:last-child { border-left-color: transparent; padding-bottom: 6px; }
+  .pasos > li::before {
+    content: counter(p);
+    position: absolute; left: -16px; top: -2px;
+    width: 31px; height: 31px; border-radius: 50%;
+    background: var(--navy); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: .9rem;
+  }
+  .pasos h3 { font-size: 1.06rem; color: var(--navy); margin-bottom: 7px; }
+  .pasos p { font-size: .95rem; line-height: 1.68; color: var(--tinta); }
+  .pasos strong { color: var(--navy); }
+  .cierre {
+    background: var(--fondo); border: 1px solid var(--borde);
+    border-radius: var(--r-md); padding: 15px 18px;
+    font-size: .93rem; line-height: 1.65; margin-top: 6px;
+  }
+  .cierre strong { color: var(--navy); }
+
+  .arriba { color: var(--superavit); }
+  .debajo { color: var(--deficit); }
+
+  /* qué entra y qué no a la masa coparticipable */
+  .entra-no { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .entra, .no-entra {
+    border-radius: var(--r-md); padding: 14px 16px;
+    border: 1px solid var(--borde);
+  }
+  .entra { background: rgba(5, 150, 105, .06); border-color: rgba(5, 150, 105, .28); }
+  .no-entra { background: rgba(220, 38, 38, .05); border-color: rgba(220, 38, 38, .24); }
+  .en-tit {
+    font-size: .7rem; font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .entra .en-tit { color: var(--superavit); }
+  .no-entra .en-tit { color: var(--deficit); }
+  .entra ul, .no-entra ul { list-style: none; }
+  .entra li, .no-entra li {
+    font-size: .9rem; padding: 4px 0 4px 15px; position: relative; color: var(--tinta);
+  }
+  .entra li::before, .no-entra li::before {
+    content: ''; position: absolute; left: 0; top: 12px;
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .entra li::before { background: var(--superavit); }
+  .no-entra li::before { background: var(--deficit); }
+
+  .ejemplo-caja {
+    background: rgba(180, 83, 9, .06);
+    border-left: 3px solid var(--alerta);
+    padding: 12px 15px; border-radius: 0 8px 8px 0;
+    font-size: .92rem; line-height: 1.62; color: #6B4A12;
+  }
+  .ejemplo-caja strong { color: var(--alerta); }
+
+  .tajadas { list-style: none; margin: 12px 0 10px; }
+  .tajadas li {
+    display: flex; align-items: baseline; gap: 13px;
+    padding: 8px 0; border-bottom: 1px solid var(--borde); font-size: .93rem;
+  }
+  .tajadas li:last-child { border-bottom: 0; }
+  .tajadas b {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+    font-size: 1.32rem; color: var(--navy); min-width: 72px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tajadas span { color: var(--tenue); }
+  .nota-tajadas { font-size: .86rem; color: var(--tenue); font-style: italic; }
+
+  /* los dos canales */
+  .dos-canales { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .canal { border: 1px solid var(--borde); border-radius: var(--r-md); padding: 20px 22px; }
+  .canal.auto { border-top: 4px solid var(--superavit); background: rgba(5, 150, 105, .04); }
+  .canal.disc { border-top: 4px solid var(--alerta); background: rgba(180, 83, 9, .04); }
+  .canal-eti {
+    font-size: .7rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  }
+  .canal.auto .canal-eti { color: var(--superavit); }
+  .canal.disc .canal-eti { color: var(--alerta); }
+  .canal h3 { font-size: 1.14rem; color: var(--navy); margin: 5px 0 13px; }
+  .canal dl > div {
+    display: grid; grid-template-columns: 1fr auto; gap: 6px 14px;
+    padding: 8px 0; border-bottom: 1px solid var(--borde);
+  }
+  .canal dt { font-size: .82rem; color: var(--tenue); }
+  .canal dd { font-size: .87rem; font-weight: 600; color: var(--tinta); text-align: right; }
+  .canal-pie {
+    margin-top: 13px; font-size: .87rem; color: var(--tenue); line-height: 1.55;
+  }
+  .canal-pie strong { color: var(--navy); }
+
+  @media (max-width: 720px) {
+    .entra-no, .dos-canales { grid-template-columns: 1fr; }
+    .canal dl > div { grid-template-columns: 1fr; }
+    .canal dd { text-align: left; }
+  }
+
+  .eje { position: relative; height: 16px; }
+  .linea {
+    position: absolute; left: 50%; top: 0; bottom: 0;
+    width: 1px; background: var(--borde-2);
+  }
+  .barra-eje { position: absolute; top: 4px; height: 8px; border-radius: 3px; }
+  .barra-eje.pos { background: var(--superavit); }
+  .barra-eje.neg { background: var(--deficit); }
+
+  .aviso-dato {
+    background: rgba(180, 83, 9, .07);
+    border: 1px solid rgba(180, 83, 9, .28);
+    border-left: 4px solid var(--alerta);
+    border-radius: var(--r-md);
+    padding: 14px 18px; font-size: .93rem; line-height: 1.6;
+  }
+  .aviso-dato strong { color: var(--alerta); }
+</style>

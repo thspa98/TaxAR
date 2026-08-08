@@ -1,0 +1,170 @@
+[
+  {
+    "gid": 68,
+    "nombre": "Buenos Aires",
+    "nombreCompleto": "Provincia de Buenos Aires",
+    "indec": "06",
+    "slug": "buenos-aires"
+  },
+  {
+    "gid": 76,
+    "nombre": "Catamarca",
+    "nombreCompleto": "Provincia de Catamarca",
+    "indec": "10",
+    "slug": "catamarca"
+  },
+  {
+    "gid": 62,
+    "nombre": "Chaco",
+    "nombreCompleto": "Provincia del Chaco",
+    "indec": "22",
+    "slug": "chaco"
+  },
+  {
+    "gid": 64,
+    "nombre": "Chubut",
+    "nombreCompleto": "Provincia del Chubut",
+    "indec": "26",
+    "slug": "chubut"
+  },
+  {
+    "gid": 54,
+    "nombre": "Ciudad Autónoma de Buenos Aires",
+    "nombreCompleto": "Ciudad Autónoma de Buenos Aires",
+    "indec": "02",
+    "slug": "ciudad-autonoma-de-buenos-aires"
+  },
+  {
+    "gid": 60,
+    "nombre": "Córdoba",
+    "nombreCompleto": "Provincia de Córdoba",
+    "indec": "14",
+    "slug": "cordoba"
+  },
+  {
+    "gid": 71,
+    "nombre": "Corrientes",
+    "nombreCompleto": "Provincia de Corrientes",
+    "indec": "18",
+    "slug": "corrientes"
+  },
+  {
+    "gid": 70,
+    "nombre": "Entre Ríos",
+    "nombreCompleto": "Provincia de Entre Ríos",
+    "indec": "30",
+    "slug": "entre-rios"
+  },
+  {
+    "gid": 63,
+    "nombre": "Formosa",
+    "nombreCompleto": "Provincia de Formosa",
+    "indec": "34",
+    "slug": "formosa"
+  },
+  {
+    "gid": 58,
+    "nombre": "Jujuy",
+    "nombreCompleto": "Provincia de Jujuy",
+    "indec": "38",
+    "slug": "jujuy"
+  },
+  {
+    "gid": 61,
+    "nombre": "La Pampa",
+    "nombreCompleto": "Provincia de La Pampa",
+    "indec": "42",
+    "slug": "la-pampa"
+  },
+  {
+    "gid": 75,
+    "nombre": "La Rioja",
+    "nombreCompleto": "Provincia de La Rioja",
+    "indec": "46",
+    "slug": "la-rioja"
+  },
+  {
+    "gid": 72,
+    "nombre": "Mendoza",
+    "nombreCompleto": "Provincia de Mendoza",
+    "indec": "50",
+    "slug": "mendoza"
+  },
+  {
+    "gid": 66,
+    "nombre": "Misiones",
+    "nombreCompleto": "Provincia de Misiones",
+    "indec": "54",
+    "slug": "misiones"
+  },
+  {
+    "gid": 74,
+    "nombre": "Neuquén",
+    "nombreCompleto": "Provincia del Neuquén",
+    "indec": "58",
+    "slug": "neuquen"
+  },
+  {
+    "gid": 65,
+    "nombre": "Río Negro",
+    "nombreCompleto": "Provincia de Río Negro",
+    "indec": "62",
+    "slug": "rio-negro"
+  },
+  {
+    "gid": 67,
+    "nombre": "Salta",
+    "nombreCompleto": "Provincia de Salta",
+    "indec": "66",
+    "slug": "salta"
+  },
+  {
+    "gid": 73,
+    "nombre": "San Juan",
+    "nombreCompleto": "Provincia de San Juan",
+    "indec": "70",
+    "slug": "san-juan"
+  },
+  {
+    "gid": 55,
+    "nombre": "San Luis",
+    "nombreCompleto": "Provincia de San Luis",
+    "indec": "74",
+    "slug": "san-luis"
+  },
+  {
+    "gid": 77,
+    "nombre": "Santa Cruz",
+    "nombreCompleto": "Provincia de Santa Cruz",
+    "indec": "78",
+    "slug": "santa-cruz"
+  },
+  {
+    "gid": 56,
+    "nombre": "Santa Fe",
+    "nombreCompleto": "Provincia de Santa Fe",
+    "indec": "82",
+    "slug": "santa-fe"
+  },
+  {
+    "gid": 59,
+    "nombre": "Santiago del Estero",
+    "nombreCompleto": "Provincia de Santiago del Estero",
+    "indec": "86",
+    "slug": "santiago-del-estero"
+  },
+  {
+    "gid": 69,
+    "nombre": "Tierra del Fuego, Antártida e Islas del Atlántico Sur",
+    "nombreCompleto": "Provincia de Tierra del Fuego, Antártida e Islas del Atlántico Sur",
+    "indec": "94",
+    "slug": "tierra-del-fuego-antartida-e-islas-del-atlantico-sur"
+  },
+  {
+    "gid": 57,
+    "nombre": "Tucumán",
+    "nombreCompleto": "Provincia de Tucumán",
+    "indec": "90",
+    "slug": "tucuman"
+  }
+]

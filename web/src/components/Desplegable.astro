@@ -1,0 +1,145 @@
+---
+/**
+ * Desplegable.astro — Contenido que el lector decide abrir.
+ *
+ * El sitio tiene mucha información valiosa que, mostrada toda junta, produce
+ * el efecto contrario al buscado: una pared de datos que nadie lee. La regla
+ * que se sigue acá es que la página muestre la conclusión y guarde el detalle
+ * a un clic de distancia.
+ *
+ * Es un <details>/<summary> nativo: funciona sin JavaScript, se abre con
+ * teclado, y el buscador indexa el contenido aunque esté cerrado —importante,
+ * porque si Google no lo leyera estaríamos escondiendo justo lo que hace
+ * valioso al sitio.
+ *
+ * Uso:
+ *   <Desplegable titulo="Ranking completo" nota="24 jurisdicciones">
+ *     ...
+ *   </Desplegable>
+ */
+interface Props {
+  titulo: string;
+  nota?: string;
+  abierto?: boolean;
+  /** 'tarjeta' se despega del fondo; 'plano' se integra a una tarjeta existente. */
+  variante?: 'tarjeta' | 'plano';
+  accion?: string;
+}
+const {
+  titulo,
+  nota,
+  abierto = false,
+  variante = 'tarjeta',
+  accion = 'Ver',
+} = Astro.props;
+---
+
+<details class:list={['desplegable', variante]} open={abierto}>
+  <summary>
+    <span class="txt">
+      <span class="titulo">{titulo}</span>
+      {nota && <span class="nota">{nota}</span>}
+    </span>
+
+    <span class="control">
+      <span class="accion">{accion}</span>
+      <span class="flecha" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="2.6"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </span>
+    </span>
+  </summary>
+
+  <div class="cuerpo"><slot /></div>
+</details>
+
+<style>
+  .desplegable { border-radius: var(--r-lg); }
+  .desplegable.tarjeta {
+    background: var(--papel);
+    border: 1px solid var(--borde);
+    box-shadow: var(--sombra);
+  }
+  .desplegable.plano {
+    border: 1px solid var(--borde);
+    background: var(--fondo);
+  }
+
+  summary {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 18px;
+    padding: 20px 24px;
+    cursor: pointer;
+    list-style: none;
+    border-radius: var(--r-lg);
+    transition: background .15s ease;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { background: rgba(59, 89, 152, .05); }
+  summary:focus-visible { outline: 3px solid var(--oro); outline-offset: -3px; }
+
+  .txt { min-width: 0; }
+  .titulo {
+    display: block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.2rem, 2.4vw, 1.55rem);
+    line-height: 1.15;
+    color: var(--navy);
+  }
+  .nota {
+    display: block;
+    font-size: .85rem; color: var(--tenue);
+    margin-top: 3px; line-height: 1.45;
+  }
+
+  .control { display: flex; align-items: center; gap: 11px; flex: none; }
+  .accion {
+    font-size: .82rem; font-weight: 600;
+    color: var(--navy-3);
+    white-space: nowrap;
+  }
+
+  /* La flecha azul: es lo que señala que hay algo para abrir. */
+  .flecha {
+    display: grid; place-items: center;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--navy-3);
+    color: #fff;
+    transition: transform .25s cubic-bezier(.22, .8, .3, 1), background .15s ease;
+  }
+  summary:hover .flecha { background: var(--navy); }
+  .desplegable[open] .flecha { transform: rotate(180deg); }
+
+  .cuerpo {
+    padding: 4px 24px 24px;
+    animation: abrir .32s cubic-bezier(.22, .8, .3, 1);
+  }
+  .desplegable.plano .cuerpo { padding-inline: 20px; }
+
+  @keyframes abrir {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Cuando está abierto, el encabezado se separa del contenido. */
+  .desplegable[open] summary {
+    border-bottom: 1px solid var(--borde);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    margin-bottom: 18px;
+  }
+
+  @media (max-width: 620px) {
+    summary { padding: 16px 18px; gap: 12px; }
+    .cuerpo { padding: 4px 18px 20px; }
+    .accion { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flecha, .cuerpo { transition: none; animation: none; }
+  }
+</style>

@@ -1,0 +1,41 @@
+---
+/**
+ * TarjetaDato.astro — Un número grande con su contexto.
+ * El dato solo no dice nada; la tarjeta siempre lleva una frase que lo ubica.
+ */
+interface Props {
+  etiqueta: string;
+  valor: string;
+  detalle?: string;
+  tono?: 'neutro' | 'superavit' | 'deficit' | 'oro';
+  href?: string;
+}
+const { etiqueta, valor, detalle, tono = 'neutro', href } = Astro.props;
+const Tag = href ? 'a' : 'div';
+---
+
+<Tag class:list={['dato', tono, href && 'clickeable']} href={href}>
+  <p class="etiqueta">{etiqueta}</p>
+  <p class="ojo valor">{valor}</p>
+  {detalle && <p class="detalle mini">{detalle}</p>}
+</Tag>
+
+<style>
+  .dato {
+    display: block;
+    background: var(--papel);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    padding: 22px;
+    box-shadow: var(--sombra);
+    text-decoration: none;
+    color: inherit;
+  }
+  .clickeable { transition: transform .18s ease, box-shadow .18s ease; }
+  .clickeable:hover { transform: translateY(-2px); box-shadow: var(--sombra-lg); }
+  .valor { margin-top: 6px; color: var(--navy); }
+  .superavit .valor { color: var(--superavit); }
+  .deficit   .valor { color: var(--deficit); }
+  .oro       .valor { color: #A8850F; }
+  .detalle { margin-top: 8px; line-height: 1.5; }
+</style>

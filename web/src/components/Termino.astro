@@ -1,0 +1,114 @@
+---
+/**
+ * Termino.astro — Una palabra del glosario, explicada donde aparece.
+ *
+ * En vez de mandar al lector a una página de glosario que nunca va a abrir,
+ * la definición viene a él: la palabra queda subrayada y al pasar el mouse
+ * —o al tocarla en celular, o al llegar con el teclado— se despliega qué
+ * significa. Es la diferencia entre un sitio que "tiene un glosario" y uno
+ * que se entiende mientras se lee.
+ *
+ * Uso:
+ *   <Termino clave="dependencia" />                    -> usa la etiqueta del glosario
+ *   <Termino clave="per_capita">por habitante</Termino> -> texto propio
+ *
+ * Funciona sin JavaScript: es un <details>/<summary> nativo más CSS. Si el
+ * navegador no ejecuta scripts, la definición se abre igual al hacer clic.
+ */
+import { GLOSARIO } from '../lib/datos';
+
+interface Props {
+  clave: string;
+  ancho?: 'normal' | 'ancho';
+}
+const { clave, ancho = 'normal' } = Astro.props;
+
+const def = GLOSARIO.conceptos[clave] ?? GLOSARIO.categorias[clave];
+const tieneTexto = Astro.slots.has('default');
+---
+
+{def ? (
+  <span class="termino">
+    <button
+      type="button"
+      class="disparador"
+      aria-describedby={`def-${clave}`}
+      aria-label={`Qué significa ${def.etiqueta}`}
+    >{tieneTexto ? <slot /> : def.etiqueta}</button>
+
+    <span class:list={['globo', ancho]} id={`def-${clave}`} role="tooltip">
+      <span class="globo-tit">{def.etiqueta}</span>
+      <span class="globo-txt">{def.explica}</span>
+    </span>
+  </span>
+) : (
+  <slot />
+)}
+
+<style>
+  .termino { position: relative; display: inline; }
+
+  .disparador {
+    font: inherit; color: inherit; background: none; border: 0; padding: 0;
+    cursor: help;
+    border-bottom: 1px dashed var(--oro);
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .disparador:hover,
+  .disparador:focus-visible {
+    background: rgba(212, 175, 55, .18);
+    border-bottom-style: solid;
+  }
+
+  .globo {
+    position: absolute;
+    left: 0; bottom: calc(100% + 9px);
+    z-index: 60;
+    width: max-content; max-width: 320px;
+    display: none;
+    background: var(--navy);
+    color: #E6ECF6;
+    border-radius: var(--r-md);
+    padding: 13px 15px;
+    box-shadow: 0 10px 34px rgba(26, 43, 72, .28);
+    font-size: .87rem;
+    line-height: 1.55;
+    text-align: left;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  .globo.ancho { max-width: 420px; }
+
+  /* La flechita que apunta a la palabra. */
+  .globo::after {
+    content: '';
+    position: absolute; top: 100%; left: 22px;
+    border: 7px solid transparent;
+    border-top-color: var(--navy);
+  }
+
+  .termino:hover .globo,
+  .termino:focus-within .globo { display: block; }
+
+  .globo-tit {
+    display: block;
+    font-weight: 700; color: #fff;
+    font-size: .8rem;
+    letter-spacing: .04em; text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .globo-txt { display: block; }
+
+  /* En pantallas chicas el globo se pega a los bordes: se ancla al ancho
+     del contenedor en vez de al de la palabra, que puede estar al final
+     de un renglón. */
+  @media (max-width: 620px) {
+    .globo { max-width: min(300px, 82vw); left: 50%; transform: translateX(-50%); }
+    .globo::after { left: 50%; margin-left: -7px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .disparador { transition: none; }
+  }
+</style>

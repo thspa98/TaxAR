@@ -1,0 +1,12 @@
+---
+/**
+ * ScriptMapa.astro — Carga el componente del mapa del IGN.
+ *
+ * Va sólo en las páginas que tienen mapa, no en el layout: el archivo pesa
+ * 560 KB y no tiene sentido descargarlo en una nota o en la metodología.
+ *
+ * `is:inline` evita que Astro lo procese con Vite —es un bundle UMD ya
+ * compilado— y `defer` hace que no bloquee el pintado de la página.
+ */
+---
+<script is:inline defer src="/assets/mapa-argentina.js"></script>

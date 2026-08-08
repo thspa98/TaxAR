@@ -1,0 +1,150 @@
+---
+import Base from '../layouts/Base.astro';
+import Explicacion from '../components/Explicacion.astro';
+import Fuente from '../components/Fuente.astro';
+import BuscadorProvincias from '../components/charts/BuscadorProvincias.jsx';
+import MapaIGN from '../components/charts/MapaIGN.jsx';
+import ScriptMapa from '../components/ScriptMapa.astro';
+import {
+  ANIOS, ANIO_ACTUAL, JURISDICCIONES, MAPA, avisoFaltantes, fila, jur, puesto, ultimoAnio,
+} from '../lib/datos';
+import { num } from '../lib/formato';
+
+const A = ANIO_ACTUAL;
+const aviso = avisoFaltantes(A);
+
+// El mapa recibe todos los años para que el selector funcione sin recargar.
+const datosMapa: Record<string, Record<string, any>> = {};
+for (const anio of ANIOS) {
+  const delAnio: Record<string, any> = {};
+  for (const slug of Object.keys(JURISDICCIONES)) {
+    const f = fila(slug, anio);
+    if (!f) continue;
+    delAnio[slug] = {
+      nombre: jur(slug).nombre,
+      corto: jur(slug).corto,
+      poblacion: f.poblacion,
+      gastos_totales: f.gastos_totales,
+      gasto_per_capita: f.gasto_per_capita,
+      impuestos_por_habitante: f.impuestos_por_habitante,
+      dependencia_nacion: f.dependencia_nacion,
+      resultado_sobre_ingresos: f.resultado_sobre_ingresos,
+    };
+  }
+  datosMapa[String(anio)] = delAnio;
+}
+
+const items = Object.keys(JURISDICCIONES).map((slug) => {
+  const j = JURISDICCIONES[slug];
+  const suAnio = ultimoAnio(slug);
+  const f = fila(slug, suAnio)!;
+  return {
+    slug,
+    nombre: j.nombre,
+    corto: j.corto,
+    region: j.region,
+    anio: suAnio,
+    atrasada: suAnio < A,
+    poblacion: f.poblacion,
+    per_capita: f.gasto_per_capita,
+    gasto: f.gastos_totales,
+    dependencia: f.dependencia_nacion,
+    resultado: f.resultado_sobre_ingresos,
+    puesto_pc: puesto('gasto_per_capita', slug, suAnio),
+  };
+}).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+---
+
+<Base
+  titulo="Tu provincia en el mapa"
+  descripcion={`Elegí tu provincia en el mapa o compará dos: gasto, población y dependencia de la Nación de las 24 jurisdicciones argentinas en ${A}.`}
+>
+  <ScriptMapa />
+  <section class="encabezado">
+    <div class="contenedor">
+      <h1 class="display titulo">Elegí tu provincia</h1>
+      <p class="bajada">
+        Tocá el mapa para ver la ficha de cualquier jurisdicción, o pasá a
+        <strong>Comparar dos</strong> y elegí un par para ponerlas lado a lado.
+      </p>
+      <p class="resumen-seccion"><b>Qué encontrás acá.</b> El mapa oficial del país con las 24 jurisdicciones. Tocá una para ver su ficha completa —cuánto gasta, en qué, de dónde saca la plata— o elegí dos y compará sus cifras lado a lado.</p>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="contenedor">
+
+      {aviso && (
+        <p class="aviso-dato">
+          <strong>Dato faltante:</strong> {aviso} En el mapa aparece rayada, y en la
+          tabla se indica de qué año es su última cifra.
+        </p>
+      )}
+
+      <div class="tarjeta tarjeta-p">
+        <MapaIGN
+            client:visible
+            indecASlug={MAPA.indec_a_slug}
+            datos={datosMapa}
+            anio={A}
+            anios={[...ANIOS].reverse()}
+            atribucion={MAPA.atribucion}
+            notaTerritorio={MAPA.nota_territorio}
+          />
+        <Fuente clave="serie_aif" nota="Población ajustada al Censo 2022" />
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion titulo="Qué mirar cuando compares dos">
+          <p>
+            La comparación más reveladora es entre una provincia patagónica y una del norte.
+            Neuquén, Santa Cruz o Chubut gastan varias veces más por habitante que Formosa o
+            Santiago del Estero, y a la vez dependen mucho menos de la Nación: cobran regalías
+            por el petróleo, el gas y los minerales que se extraen de su territorio, y reparten
+            ese ingreso entre poca gente.
+          </p>
+          <p>
+            La otra comparación que sorprende es entre dos provincias de población parecida.
+            Ahí el tamaño deja de ser excusa y lo que queda es una decisión política: dos
+            gobiernos con la misma cantidad de gente que atender y presupuestos muy distintos.
+          </p>
+        </Explicacion>
+      </div>
+
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">O buscala en la lista</h2>
+        <p class="bajada chico" style="margin-bottom:18px">
+          Se puede escribir sin tildes, y las columnas se ordenan tocando el título.
+        </p>
+        <BuscadorProvincias client:visible items={items} anio={A} />
+        <Fuente clave="serie_aif" />
+      </div>
+
+    </div>
+  </section>
+</Base>
+
+<style>
+  .encabezado { background: var(--navy); color: #fff; padding-block: 52px 44px; }
+  .titulo { font-size: clamp(2.1rem, 5.4vw, 3.2rem); margin-bottom: 14px; }
+  .resumen-seccion {
+    margin-top: 16px; max-width: 700px;
+    font-size: .93rem; line-height: 1.68; color: #9FB3D0;
+    border-left: 2px solid rgba(212, 175, 55, .55); padding-left: 14px;
+  }
+  .resumen-seccion b { color: var(--oro-claro); font-weight: 600; }
+  .encabezado .bajada { color: #CBD8EA; max-width: 640px; }
+  .encabezado strong { color: #fff; font-weight: 600; }
+  .h2 { font-size: clamp(1.35rem, 2.7vw, 1.8rem); color: var(--navy); margin-bottom: 5px; }
+  .aviso-dato {
+    background: rgba(180, 83, 9, .07);
+    border: 1px solid rgba(180, 83, 9, .28);
+    border-left: 4px solid var(--alerta);
+    border-radius: var(--r-md);
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    font-size: .93rem;
+    line-height: 1.6;
+  }
+  .aviso-dato strong { color: var(--alerta); }
+</style>

@@ -1,0 +1,88 @@
+---
+import Base from '../../layouts/Base.astro';
+import PortadaNoticia from '../../components/PortadaNoticia.astro';
+import { CATEGORIA_COLOR, NOTICIAS } from '../../lib/noticias';
+import { fecha } from '../../lib/formato';
+
+const [principal, ...resto] = NOTICIAS;
+---
+
+<Base
+  titulo="Noticias fiscales"
+  descripcion="Análisis y explicadores sobre el gasto y los impuestos de las provincias argentinas, siempre apoyados en datos oficiales verificables."
+>
+  <section class="encabezado">
+    <div class="contenedor">
+      <h1 class="display titulo">Noticias fiscales</h1>
+      <p class="bajada">
+        Cada nota parte de un dato que podés verificar en este mismo sitio y termina
+        enlazando a la fuente oficial. Sin opinión disfrazada de análisis.
+      </p>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="contenedor">
+
+      <a class="principal" href={`/noticias/${principal.slug}/`}>
+        <PortadaNoticia variante={principal.portada} cifra={principal.cifra}
+                        pie={principal.cifraPie} categoria={principal.categoria}
+                        color={CATEGORIA_COLOR[principal.categoria]} alto={260} />
+        <div class="p-txt">
+          <h2 class="display p-tit">{principal.titulo}</h2>
+          <p class="bajada">{principal.bajada}</p>
+          <p class="mini p-meta">{fecha(principal.fecha)} · {principal.minutos} min</p>
+        </div>
+      </a>
+
+      <div class="grilla-notas">
+        {resto.map((n) => (
+          <a class="nota" href={`/noticias/${n.slug}/`}>
+            <PortadaNoticia variante={n.portada} cifra={n.cifra} pie={n.cifraPie}
+                            categoria={n.categoria} color={CATEGORIA_COLOR[n.categoria]}
+                            alto={150} />
+            <div class="n-txt">
+              <h3 class="n-tit">{n.titulo}</h3>
+              <p class="n-baj">{n.bajada}</p>
+              <p class="mini n-meta">{fecha(n.fecha)} · {n.minutos} min</p>
+            </div>
+          </a>
+        ))}
+      </div>
+
+    </div>
+  </section>
+</Base>
+
+<style>
+  .encabezado { background: var(--navy); color: #fff; padding-block: 52px 44px; }
+  .titulo { font-size: clamp(2.1rem, 5.4vw, 3.2rem); margin-bottom: 14px; }
+  .encabezado .bajada { color: #CBD8EA; max-width: 640px; }
+
+  .principal {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--papel); border: 1px solid var(--borde);
+    border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--sombra);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .principal:hover { transform: translateY(-3px); box-shadow: var(--sombra-lg); }
+  .p-txt { padding: 24px 26px 26px; }
+  .p-tit { font-size: clamp(1.5rem, 3.4vw, 2.1rem); color: var(--navy); margin-bottom: 10px; }
+  .p-meta { margin-top: 12px; }
+
+  .grilla-notas {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px; margin-top: 22px;
+  }
+  .nota {
+    display: flex; flex-direction: column; text-decoration: none; color: inherit;
+    background: var(--papel); border: 1px solid var(--borde);
+    border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--sombra);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .nota:hover { transform: translateY(-3px); box-shadow: var(--sombra-lg); }
+  .n-txt { padding: 17px 19px 19px; display: flex; flex-direction: column; flex: 1; }
+  .n-tit { font-size: 1.05rem; color: var(--navy); line-height: 1.35; margin-bottom: 8px; }
+  .n-baj { font-size: .89rem; color: var(--tenue); line-height: 1.55; }
+  .n-meta { margin-top: auto; padding-top: 12px; }
+</style>

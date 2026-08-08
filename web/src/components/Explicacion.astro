@@ -1,0 +1,46 @@
+---
+/**
+ * Explicacion.astro — El bloque "esto qué significa".
+ *
+ * Va después de cada dato duro. La regla de redacción: si una frase no se
+ * entendería en una sobremesa, se reescribe. Nada de "resultado financiero
+ * negativo": "gastó más de lo que recaudó".
+ */
+interface Props {
+  titulo?: string;
+  variante?: 'normal' | 'atencion';
+}
+const { titulo = 'Qué significa esto', variante = 'normal' } = Astro.props;
+---
+
+<aside class:list={['explicacion', variante]}>
+  <h3 class="titulo">{titulo}</h3>
+  <div class="cuerpo"><slot /></div>
+</aside>
+
+<style>
+  .explicacion {
+    background: rgba(212, 175, 55, .08);
+    border: 1px solid rgba(212, 175, 55, .34);
+    border-left: 4px solid var(--oro);
+    border-radius: var(--r-md);
+    padding: 20px 22px;
+  }
+  .explicacion.atencion {
+    background: rgba(180, 83, 9, .06);
+    border-color: rgba(180, 83, 9, .3);
+    border-left-color: var(--alerta);
+  }
+  .titulo {
+    font-size: .74rem;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: #8A6D12;
+    margin-bottom: 9px;
+  }
+  .explicacion.atencion .titulo { color: var(--alerta); }
+  .cuerpo { font-size: .96rem; line-height: 1.68; }
+  .cuerpo :global(p + p) { margin-top: 11px; }
+  .cuerpo :global(strong) { font-weight: 700; color: var(--navy); }
+</style>

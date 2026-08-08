@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TaxAR – Transparencia Fiscal para Todos</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;900&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:#F2F5FA;color:#1E293B}
+.df{font-family:'Barlow Condensed',sans-serif!important}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(0.84)}to{opacity:1;transform:scale(1)}}
+.fu{animation:fadeUp .5s ease both}
+.fi{animation:fadeIn .38s ease both}
+.pop{animation:pop .6s cubic-bezier(.34,1.56,.64,1) both}
+.ctag:hover{transform:translateY(-2px)!important;box-shadow:0 10px 34px rgba(212,175,55,.55)!important}
+.ctaw:hover{background:rgba(255,255,255,.1)!important}
+.pbtn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(26,43,72,.18)}
+.tbtn:hover{background:rgba(26,43,72,.07)!important}
+input:focus{border-color:#D4AF37!important;box-shadow:0 0 0 3px rgba(212,175,55,.22);outline:none}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#DDE3EE;border-radius:3px}
+::-webkit-scrollbar-thumb{background:#2D4A7A;border-radius:3px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useRef,useCallback}=React;
+const {
+  PieChart,Pie,Cell,BarChart,Bar,XAxis,YAxis,
+  CartesianGrid,Tooltip,Legend,LineChart,Line,
+  ResponsiveContainer
+}=Recharts;
+
+const C={
+  navy:"#1A2B48",navy2:"#2D4A7A",
+  gold:"#D4AF37",white:"#FFFFFF",bg:"#F2F5FA",
+  border:"#DDE3EE",muted:"#64748B",text:"#1E293B",
+  green:"#059669",
+};
+const PIE_C=["#3B82F6","#10B981","#EF4444","#F59E0B","#8B5CF6","#06B6D4","#F97316","#94A3B8"];
+const TAX_C=[C.navy,C.navy2,C.gold,"#F5D060","#CBD5E1"];
+
+const DATA={
+  budget:{
+    total:1850000,exec:1720000,
+    src:"Ministerio de Finanzas · Provincia de Córdoba",date:"Dic 2023",
+    fn:[
+      {name:"Educación",v:499500},{name:"Salud",v:296000},
+      {name:"Seguridad",v:203500},{name:"Obras Públicas",v:166500},
+      {name:"Administración",v:259000},{name:"Serv. Sociales",v:222000},
+      {name:"Deuda Pública",v:111000},{name:"Otros",v:92500},
+    ],
+    hist:[
+      {y:"2019",t:265,e:252},{y:"2020",t:310,e:290},
+      {y:"2021",t:490,e:460},{y:"2022",t:950,e:890},{y:"2023",t:1850,e:1720},
+    ],
+  },
+  tax:{
+    own:960000,copart:580000,
+    src:"Agencia de Recaudación Córdoba (AgRC)",date:"Dic 2023",
+    items:[
+      {name:"Ingresos Brutos",v:652800},{name:"Inmobiliario",v:134400},
+      {name:"Automotor",v:86400},{name:"Sellos",v:67200},{name:"Otros",v:19200},
+    ],
+    hist:[
+      {y:"2019",p:95,c:110},{y:"2020",p:115,c:125},
+      {y:"2021",p:210,c:210},{y:"2022",p:480,c:380},{y:"2023",p:960,c:580},
+    ],
+  },
+  sal:{total:649000,pct:35.1,src:"Ministerio de Finanzas · Provincia de Córdoba",date:"Dic 2023"},
+};
+
+const PROVS=[
+  ["cordoba","Córdoba",true,"165,152 312,152 312,335 248,335 228,362 165,362"],
+  ["jujuy","Jujuy",false,"155,8 205,8 205,42 155,42"],
+  ["salta","Salta",false,"118,8 268,8 268,100 118,100"],
+  ["formosa","Formosa",false,"268,8 400,8 400,100 268,100"],
+  ["chaco","Chaco",false,"268,100 400,100 400,168 268,168"],
+  ["misiones","Misiones",false,"400,65 492,65 492,168 400,168"],
+  ["tucuman","Tucumán",false,"175,100 215,100 215,152 175,152"],
+  ["catamarca","Catamarca",false,"108,100 175,100 175,152 148,188 108,188"],
+  ["sde","Santiago del Estero",false,"215,100 268,100 268,252 215,252"],
+  ["corrientes","Corrientes",false,"380,168 492,168 492,282 408,292 380,262"],
+  ["entrerios","Entre Ríos",false,"312,252 380,252 380,262 408,292 412,335 370,342 312,342"],
+  ["larioja","La Rioja",false,"108,188 148,188 165,252 145,278 108,278"],
+  ["sanjuan","San Juan",false,"68,188 108,188 108,278 68,278"],
+  ["mendoza","Mendoza",false,"68,278 145,278 148,368 120,412 68,412"],
+  ["santafe","Santa Fe",false,"312,152 382,152 382,335 312,335"],
+  ["bsas","Buenos Aires",false,"248,335 382,335 415,512 370,552 248,552"],
+  ["caba","C.A.B.A.",false,"366,335 382,335 382,350 366,350"],
+  ["sanluis","San Luis",false,"120,278 165,278 165,368 120,368"],
+  ["lapampa","La Pampa",false,"120,368 248,368 248,460 120,460"],
+  ["neuquen","Neuquén",false,"68,412 148,412 148,462 68,462"],
+  ["rionegro","Río Negro",false,"68,462 248,462 248,538 68,538"],
+  ["chubut","Chubut",false,"68,538 248,538 248,632 68,632"],
+  ["santacruz","Santa Cruz",false,"68,632 248,632 248,726 68,726"],
+  ["tdf","Tierra del Fuego",false,"95,726 215,726 215,788 95,788"],
+  ["malvinas","Islas Malvinas",false,"432,580 476,580 476,628 432,628"],
+  ["antartida","Antártida Argentina",false,"68,788 215,788 215,818 68,818"],
+];
+
+const TABS=[
+  {id:"budget",lbl:"💰 Presupuesto"},
+  {id:"taxes",lbl:"🏦 Impuestos"},
+  {id:"salary",lbl:"👥 Salarios"},
+  {id:"calc",lbl:"🧮 Calculadora"},
+];
+
+const fmtB=n=>`$${(n/1e6).toFixed(2)} B`;
+const fmtM=n=>`$${n.toLocaleString("es-AR")} M`;
+const pctOf=(a,b)=>`${((a/b)*100).toFixed(1)}%`;
+
+function Card({children,style={}}){
+  return <div style={{background:C.white,borderRadius:16,padding:24,
+    boxShadow:"0 2px 20px rgba(26,43,72,0.07)",border:`1px solid ${C.border}`,...style}}>
+    {children}
+  </div>;
+}
+
+function Tip({label,text}){
+  const[sh,setSh]=useState(false);
+  return <span style={{position:"relative",display:"inline-block"}}>
+    <span style={{borderBottom:`1px dashed ${C.gold}`,cursor:"help"}}
+      onMouseEnter={()=>setSh(true)} onMouseLeave={()=>setSh(false)}>{label}</span>
+    {sh&&<span style={{position:"absolute",bottom:"130%",left:"50%",transform:"translateX(-50%)",
+      zIndex:300,width:220,background:C.navy,color:C.white,padding:"8px 12px",borderRadius:10,
+      fontSize:12,lineHeight:"1.55",boxShadow:"0 6px 24px rgba(0,0,0,0.32)",
+      pointerEvents:"none",fontFamily:"'Outfit',sans-serif",fontWeight:400}}>{text}</span>}
+  </span>;
+}
+
+function Kpi({label,value,sub,delay=0}){
+  return <Card style={{flex:1,minWidth:158}}>
+    <div style={{fontSize:12,color:C.muted,marginBottom:6,lineHeight:1.4}}>{label}</div>
+    <div className="pop df" style={{fontSize:30,fontWeight:900,color:C.navy,
+      letterSpacing:"-0.5px",animationDelay:`${delay}ms`}}>{value}</div>
+    {sub&&<div style={{fontSize:11,color:C.muted,marginTop:4}}>{sub}</div>}
+  </Card>;
+}
+
+function SrcTag({src,date,type="oficial"}){
+  const colors={oficial:C.green,estimado:"#D97706","simulación":"#EA580C"};
+  return <div style={{display:"flex",alignItems:"center",gap:8,marginTop:12,
+    fontSize:11,color:C.muted,flexWrap:"wrap"}}>
+    <span style={{background:colors[type]||C.green,color:C.white,padding:"2px 8px",
+      borderRadius:10,fontWeight:700,fontSize:9,textTransform:"uppercase",
+      letterSpacing:"0.5px",flexShrink:0}}>{type}</span>
+    <span>{src}</span><span style={{color:C.border}}>·</span><span>{date}</span>
+  </div>;
+}
+
+function SecHead({icon,title,sub}){
+  return <div style={{marginBottom:22}} className="fu">
+    <h2 className="df" style={{fontSize:26,fontWeight:800,color:C.navy,margin:"0 0 4px",
+      letterSpacing:"0.5px",display:"flex",alignItems:"center",gap:8}}>
+      <span>{icon}</span><span>{title}</span>
+    </h2>
+    {sub&&<p style={{fontSize:13,color:C.muted,marginTop:4}}>{sub}</p>}
+  </div>;
+}
+
+function WarnCard({children}){
+  return <div style={{background:"#FFFBEB",border:"1.5px solid #FCD34D",borderRadius:12,
+    padding:"12px 16px",fontSize:13,color:"#92400E",display:"flex",gap:10,alignItems:"flex-start"}}>
+    <span style={{fontSize:16}}>⚠️</span><span>{children}</span>
+  </div>;
+}
+
+function ArgMap({onSelect}){
+  const[hov,setHov]=useState(null);
+  const[sel,setSel]=useState("cordoba");
+  const[tip,setTip]=useState(null);
+  const[xy,setXY]=useState({x:0,y:0});
+  const svgRef=useRef(null);
+  const mv=useCallback((e,p)=>{
+    if(!svgRef.current)return;
+    const r=svgRef.current.getBoundingClientRect();
+    setXY({
+      x:Math.min((e.clientX-r.left)*(560/r.width)+8,360),
+      y:Math.max((e.clientY-r.top)*(830/r.height)-52,8),
+    });
+    setTip(p);
+  },[]);
+  const click=useCallback((p)=>{
+    if(p[2]){setSel(p[0]);onSelect({id:p[0],name:p[1],hasData:true});}
+    else onSelect({id:p[0],name:p[1],hasData:false});
+  },[onSelect]);
+  return <svg ref={svgRef} viewBox="0 0 560 830"
+    style={{width:"100%",maxWidth:480,display:"block",margin:"0 auto",
+      filter:"drop-shadow(0 8px 32px rgba(26,43,72,0.15))",borderRadius:12,cursor:"pointer"}}
+    onMouseLeave={()=>{setHov(null);setTip(null);}}>
+    <rect x="0" y="0" width="560" height="830" fill="#CADFF0" rx="12"/>
+    <defs>
+      <pattern id="g" width="30" height="30" patternUnits="userSpaceOnUse">
+        <path d="M30 0L0 0 0 30" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.5"/>
+      </pattern>
+    </defs>
+    <rect x="0" y="0" width="560" height="830" fill="url(#g)" rx="12"/>
+    {PROVS.map(p=>{
+      const isH=hov===p[0],isS=sel===p[0];
+      const fill=isS?C.navy:isH?C.gold:(p[2]?"#3A6FA3":"#8FAFC5");
+      return <polygon key={p[0]} points={p[3]} fill={fill}
+        stroke={isS?C.gold:"#fff"} strokeWidth={isS?2:1.2}
+        style={{transition:"fill .15s,stroke .15s"}}
+        onMouseEnter={e=>{setHov(p[0]);mv(e,p);}}
+        onMouseMove={e=>mv(e,p)}
+        onMouseLeave={()=>{setHov(null);setTip(null);}}
+        onClick={()=>click(p)}/>;
+    })}
+    {[[238,255,"CÓRDOBA",C.white,10,800],[325,443,"Bs. As.",C.white,8,600],
+      [347,245,"Santa Fe",C.white,7,600],[103,345,"Mendoza",C.white,7,500],
+      [158,588,"Chubut",C.white,7,500],[158,680,"Sta. Cruz",C.white,7,500],
+      [158,500,"Río Negro",C.white,6,500],[215,325,"S. Luis",C.white,6,400],
+      [184,415,"La Pampa",C.white,7,400],[454,602,"Malvinas","#1A2B48",7,600],
+    ].map(([x,y,l,col,sz,fw])=>
+      <text key={l} x={x} y={y} textAnchor="middle" fontSize={sz} fill={col}
+        fontWeight={fw} fontFamily="'Outfit',sans-serif"
+        style={{pointerEvents:"none",userSelect:"none",letterSpacing:"0.5px"}}>{l}</text>
+    )}
+    <text x="140" y="808" textAnchor="middle" fontSize="6" fill="#fff"
+      fontFamily="'Outfit',sans-serif" style={{pointerEvents:"none"}}>ANTÁRTIDA ARGENTINA</text>
+    {tip&&<>
+      <rect x={xy.x} y={xy.y} width="185" height="50" rx="8" fill={C.navy} opacity="0.96"
+        style={{filter:"drop-shadow(0 3px 8px rgba(0,0,0,0.35))",pointerEvents:"none"}}/>
+      <text x={xy.x+10} y={xy.y+18} fontSize="11" fill="#fff" fontWeight="700"
+        fontFamily="'Outfit',sans-serif" style={{pointerEvents:"none"}}>{tip[1]}</text>
+      <text x={xy.x+10} y={xy.y+36} fontSize="10" fill={tip[2]?C.gold:"#94A3B8"}
+        fontFamily="'Outfit',sans-serif" style={{pointerEvents:"none"}}>
+        {tip[2]?"● Datos disponibles":"○ Datos en construcción"}
+      </text>
+    </>}
+  </svg>;
+}
+
+function Budget(){
+  const d=DATA.budget;
+  return <div className="fi">
+    <SecHead icon="💰" title="Presupuesto y Gasto Público" sub="Ejercicio fiscal 2023 · Provincia de Córdoba"/>
+    <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:24}}>
+      <Kpi label={<Tip label="Presupuesto Total" text="Monto total aprobado en la Ley de Presupuesto provincial para el ejercicio 2023."/>} value={fmtB(d.total)} sub="miles de millones ARS" delay={0}/>
+      <Kpi label={<Tip label="Gasto Devengado" text="Gasto ya comprometido o realizado administrativamente, aunque no necesariamente pagado en efectivo."/>} value={fmtB(d.exec)} sub={`${pctOf(d.exec,d.total)} del presupuesto`} delay={100}/>
+      <Kpi label="Ejecución" value={pctOf(d.exec,d.total)} sub="Nivel de ejecución del gasto" delay={200}/>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:18}}>
+      <Card>
+        <h3 style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:4}}>Distribución por Función</h3>
+        <ResponsiveContainer width="100%" height={270}>
+          <PieChart>
+            <Pie data={d.fn} dataKey="v" cx="50%" cy="50%" innerRadius={55} outerRadius={98}
+              label={({percent})=>percent>0.06?`${(percent*100).toFixed(0)}%`:""} labelLine={false} fontSize={11}>
+              {d.fn.map((_,i)=><Cell key={i} fill={PIE_C[i%PIE_C.length]}/>)}
+            </Pie>
+            <Tooltip formatter={v=>[fmtM(v),"Gasto"]}/>
+            <Legend wrapperStyle={{fontSize:11}}/>
+          </PieChart>
+        </ResponsiveContainer>
+        <SrcTag src={d.src} date={d.date}/>
+      </Card>
+      <Card>
+        <h3 style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:4}}>Evolución Histórica (miles de M)</h3>
+        <ResponsiveContainer width="100%" height={270}>
+          <LineChart data={d.hist}>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.border}/>
+            <XAxis dataKey="y" fontSize={11}/><YAxis fontSize={11} tickFormatter={v=>`$${v}`}/>
+            <Tooltip formatter={v=>[`$${v} B`]}/><Legend wrapperStyle={{fontSize:11}}/>
+            <Line dataKey="t" stroke={C.navy} strokeWidth={2.5} name="Presupuesto" dot={{r:4,fill:C.navy}} activeDot={{r:6}}/>
+            <Line dataKey="e" stroke={C.gold} strokeWidth={2.5} name="Devengado" dot={{r:4,fill:C.gold}} strokeDasharray="5 5"/>
+          </LineChart>
+        </ResponsiveContainer>
+        <SrcTag src={d.src} date={d.date}/>
+      </Card>
+    </div>
+    <Card>
+      <h3 style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:14}}>Gasto por Función – 2023 (millones ARS)</h3>
+      <ResponsiveContainer width="100%" height={230}>
+        <BarChart data={d.fn} layout="vertical" margin={{left:10}}>
+          <XAxis type="number" fontSize={10} tickFormatter={v=>`$${(v/1000).toFixed(0)}k M`}/>
+          <YAxis type="category" dataKey="name" fontSize={11} width={135}/>
+          <Tooltip formatter={v=>[fmtM(v),"Gasto"]}/>
+          <Bar dataKey="v" radius={[0,8,8,0]}>{d.fn.map((_,i)=><Cell key={i} fill={PIE_C[i%PIE_C.length]}/>)}</Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <SrcTag src={d.src} date={d.date}/>
+    </Card>
+  </div>;
+}
+
+function Taxes(){
+  const d=DATA.tax;
+  const total=d.own+d.copart;
+  return <div className="fi">
+    <SecHead icon="🏦" title="Estructura Tributaria" sub="Recaudación propia y coparticipación federal · 2023"/>
+    <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:24}}>
+      <Kpi label={<Tip label="Recaudación Propia" text="Impuestos recaudados directamente por la provincia, sin depender del Gobierno Nacional."/>} value={fmtB(d.own)} sub={`${pctOf(d.own,total)} de los recursos`} delay={0}/>
+      <Kpi label={<Tip label="Coparticipación Federal" text="Fondos transferidos por el Gobierno Nacional según la ley de coparticipación impositiva."/>} value={fmtB(d.copart)} sub={`${pctOf(d.copart,total)} de los recursos`} delay={100}/>
+      <Kpi label="Recursos Totales" value={fmtB(total)} sub="Rec. propia + coparticipación" delay={200}/>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
+      <Card>
+        <h3 style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:4}}>Composición Tributaria Provincial</h3>
+        <ResponsiveContainer width="100%" height={270}>
+          <PieChart>
+            <Pie data={d.items} dataKey="v" cx="50%" cy="50%" innerRadius={58} outerRadius={98}
+              label={({percent})=>percent>0.08?`${(percent*100).toFixed(0)}%`:""} labelLine={false} fontSize={11}>
+              {d.items.map((_,i)=><Cell key={i} fill={TAX_C[i%TAX_C.length]}/>)}
+            </Pie>
+            <Tooltip formatter={v=>[fmtM(v),"Recaudación"]}/><Legend wrapperStyle={{fontSize:11}}/>
+          </PieChart>
+        </ResponsiveContainer>
+        <SrcTag src={d.src} date={d.date}/>
+      </Card>
+      <Card>
+        <h3 style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:4}}>Rec. Propia vs Coparticipación</h3>
+        <ResponsiveContainer width="100%" height={270}>
+          <BarChart data={d.hist}>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.border}/>
+            <XAxis dataKey="y" fontSize={11}/><YAxis fontSize={11} tickFormatter={v=>`$${v}`}/>
+            <Tooltip formatter={v=>[`$${v} B`]}/><Legend wrapperStyle={{fontSize:11}}/>
+            <Bar dataKey="p" stackId="a" fill={C.navy} name="Rec. Propia" radius={[0,0,4,4]}/>
+            <Bar dataKey="c" stackId="a" fill={C.gold} name="Coparticipación" radius={[4,4,0,0]}/>
+          </BarChart>
+        </ResponsiveContainer>
+        <SrcTag src={d.src} date={d.date}/>
+      </Card>
+    </div>
+  </div>;
+}
+
+function Salaries(){
+  const d=DATA.sal;
+  const rest=DATA.budget.total-d.total;
+  const donut=[{name:"Masa Salarial",v:d.total},{name:"Resto del Gasto",v:rest}];
+  const bars=[
+    {name:"Masa Salarial",v:d.total,c:C.navy},
+    {name:"Obras Públicas",v:DATA.budget.fn[3].v,c:PIE_C[3]},
+    {name:"Serv. Sociales",v:DATA.budget.fn[5].v,c:PIE_C[5]},
+    {name:"Deuda Pública",v:DATA.budget.fn[6].v,c:PIE_C[6]},
+  ];
+  return <div className="fi">
+    <SecHead icon="👥" title="Gasto en Salarios Públicos" sub="Masa salarial del sector público provincial · 2023"/>
+    <WarnCard><strong>Nota: </strong>No se publican salarios individuales. Solo se muestra el total de la masa salarial como porcentaje del presupuesto.</WarnCard>
+    <div style={{height:14}}/>
+    <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:24}}>
+      <Kpi label={<Tip label="Masa Salarial Total" text="Total de remuneraciones del personal de la administración pública. No se publican salarios individuales."/>} value={fmtB(d.total)} sub="No se publican salarios individuales" delay={0}/>
+      <Kpi label="% del Presupuesto" value={`${d.pct}%`} sub="Del total del gasto provincial" delay={100}/>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
+      <Card>
+        <h3 style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:4}}>Masa Salarial vs Resto del Gasto</h3>
+        <ResponsiveContainer width="100%" height={255}>
+          <PieChart>
+            <Pie data={donut} dataKey="v" cx="50%" cy="50%" innerRadius={68} outerRadius={108}
+              label={({percent})=>`${(percent*100).toFixed(1)}%`}>
+              <Cell fill={C.navy}/><Cell fill={C.border}/>
+            </Pie>
+            <Tooltip formatter={v=>[fmtM(v)]}/><Legend wrapperStyle={{fontSize:11}}/>
+          </PieChart>
+        </ResponsiveContainer>
+        <SrcTag src={d.src} date={d.date}/>
+      </Card>
+      <Card>
+        <h3 style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:4}}>Comparación con otras funciones</h3>
+        <ResponsiveContainer width="100%" height={255}>
+          <BarChart data={bars} layout="vertical">
+            <XAxis type="number" fontSize={10} tickFormatter={v=>`$${(v/1000).toFixed(0)}k M`}/>
+            <YAxis type="category" dataKey="name" fontSize={10} width={130}/>
+            <Tooltip formatter={v=>[fmtM(v)]}/>
+            <Bar dataKey="v" radius={[0,8,8,0]}>{bars.map((b,i)=><Cell key={i} fill={b.c}/>)}</Bar>
+          </BarChart>
+        </ResponsiveContainer>
+        <SrcTag src={d.src} date={d.date}/>
+      </Card>
+    </div>
+  </div>;
+}
+
+function Calc(){
+  const[f,setF]=useState({income:500000,prop:false,car:false,biz:false});
+  const[r,setR]=useState(null);
+  const go=()=>{
+    const iva=f.income*0.60*0.21;
+    const ib=f.biz?f.income*0.035:0;
+    const inmo=f.prop?8500:0;
+    const auto=f.car?4500:0;
+    const ganancias=f.income>750000?(f.income-750000)*0.27/12:0;
+    setR({iva,ib,inmo,auto,ganancias,total:iva+ib+inmo+auto+ganancias});
+  };
+  const bars=r?[
+    {n:"IVA (consumo)",v:r.iva,c:"#3B82F6"},{n:"Ing. Brutos",v:r.ib,c:C.navy},
+    {n:"Inmobiliario",v:r.inmo,c:C.gold},{n:"Automotor",v:r.auto,c:"#8B5CF6"},
+    {n:"Ganancias",v:r.ganancias,c:"#EF4444"},
+  ].filter(b=>b.v>0):[];
+  const inp={width:"100%",padding:"10px 14px",borderRadius:8,border:`1.5px solid ${C.border}`,
+    fontSize:15,color:C.text,fontFamily:"'Outfit',sans-serif",transition:"border-color .2s",outline:"none"};
+  return <div className="fi">
+    <SecHead icon="🧮" title="¿Cuánto Pagás en Impuestos?" sub="Estimación educativa · no es liquidación oficial"/>
+    <WarnCard><strong>Estimación educativa. </strong>Valores aproximados basados en alícuotas generales 2023. No reemplaza asesoramiento profesional ni es una liquidación oficial.</WarnCard>
+    <div style={{height:18}}/>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
+      <Card>
+        <h3 style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:18}}>Ingresá tus datos</h3>
+        <label style={{display:"block",fontSize:12,color:C.muted,marginBottom:5}}>Ingreso mensual bruto (ARS)</label>
+        <input type="number" style={{...inp,marginBottom:18}} value={f.income} onChange={e=>setF({...f,income:+e.target.value})}/>
+        <div style={{display:"flex",flexDirection:"column",gap:14,marginBottom:24}}>
+          {[["prop","¿Tenés propiedad inmueble?"],["car","¿Tenés vehículo automotor?"],
+            ["biz","¿Tenés actividad comercial o profesional?"]].map(([k,l])=>
+            <label key={k} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,cursor:"pointer",color:C.text}}>
+              <input type="checkbox" style={{accentColor:C.gold,width:17,height:17,cursor:"pointer"}}
+                checked={f[k]} onChange={e=>setF({...f,[k]:e.target.checked})}/>{l}
+            </label>
+          )}
+        </div>
+        <button onClick={go} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",
+          background:C.navy,color:C.white,fontWeight:700,fontSize:15,cursor:"pointer",
+          fontFamily:"'Outfit',sans-serif",transition:"all .2s"}}>
+          Calcular estimación →
+        </button>
+      </Card>
+      <Card>
+        {r?<div className="fi">
+          <div style={{fontSize:12,color:C.muted,marginBottom:4}}>Carga impositiva estimada mensual</div>
+          <div className="pop df" style={{fontSize:38,fontWeight:900,color:C.gold,letterSpacing:"-1px",marginBottom:2}}>
+            ${r.total.toLocaleString("es-AR",{maximumFractionDigits:0})}
+          </div>
+          <div style={{fontSize:13,color:C.muted,marginBottom:18}}>
+            ≈ {((r.total/f.income)*100).toFixed(1)}% de tu ingreso mensual
+          </div>
+          <ResponsiveContainer width="100%" height={185}>
+            <BarChart data={bars} layout="vertical">
+              <XAxis type="number" fontSize={10} tickFormatter={v=>`$${(v/1000).toFixed(0)}k`}/>
+              <YAxis type="category" dataKey="n" fontSize={11} width={115}/>
+              <Tooltip formatter={v=>[`$${v.toLocaleString("es-AR",{maximumFractionDigits:0})}`]}/>
+              <Bar dataKey="v" radius={[0,8,8,0]}>{bars.map((b,i)=><Cell key={i} fill={b.c}/>)}</Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <SrcTag src="Alícuotas generales AFIP · AgRC 2023" date="2023" type="simulación"/>
+        </div>:
+        <div style={{height:300,display:"flex",flexDirection:"column",alignItems:"center",
+          justifyContent:"center",color:C.muted,textAlign:"center",gap:12}}>
+          <div style={{fontSize:52}}>📊</div>
+          <div style={{fontSize:14,lineHeight:"1.7"}}>Completá el formulario<br/>y hacé clic en Calcular</div>
+        </div>}
+      </Card>
+    </div>
+  </div>;
+}
+
+function ProvinceModal({prov,onClose}){
+  return <div style={{position:"fixed",inset:0,background:"rgba(10,20,40,0.62)",display:"flex",
+    alignItems:"center",justifyContent:"center",zIndex:999,backdropFilter:"blur(5px)"}} onClick={onClose}>
+    <div className="fu" onClick={e=>e.stopPropagation()}
+      style={{background:C.white,borderRadius:20,padding:"42px 38px",maxWidth:400,
+        width:"90%",textAlign:"center",boxShadow:"0 24px 60px rgba(0,0,0,0.3)"}}>
+      <div style={{fontSize:50,marginBottom:12}}>🏗️</div>
+      <h3 className="df" style={{fontSize:24,fontWeight:800,color:C.navy,margin:"0 0 10px"}}>{prov.name}</h3>
+      <p style={{fontSize:14,color:C.muted,margin:"0 0 28px",lineHeight:1.7}}>
+        Datos en construcción para esta provincia. Estamos trabajando para incorporar información oficial
+        de <strong style={{color:C.navy}}>{prov.name}</strong> próximamente.
+      </p>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <button onClick={onClose} style={{padding:"11px 28px",borderRadius:10,border:"none",
+          background:C.navy,color:C.white,fontWeight:700,cursor:"pointer",
+          fontSize:14,fontFamily:"'Outfit',sans-serif"}}>Volver al mapa</button>
+        <button style={{padding:"9px",borderRadius:10,border:`1px solid ${C.border}`,
+          background:"transparent",color:C.muted,fontSize:12,cursor:"pointer",
+          fontFamily:"'Outfit',sans-serif"}}>Quiero recibir novedades sobre esta provincia</button>
+      </div>
+    </div>
+  </div>;
+}
+
+function TaxAR(){
+  const[showDB,setShowDB]=useState(false);
+  const[tab,setTab]=useState("budget");
+  const[modal,setModal]=useState(null);
+  const dashRef=useRef(null);
+  const onProv=useCallback((p)=>{
+    if(!p.hasData){setModal(p);return;}
+    setShowDB(true);
+    setTimeout(()=>dashRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),80);
+  },[]);
+
+  return <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'Outfit',sans-serif"}}>
+
+    {/* NAV */}
+    <nav style={{background:C.navy,height:60,padding:"0 32px",display:"flex",alignItems:"center",
+      justifyContent:"space-between",position:"sticky",top:0,zIndex:90,
+      boxShadow:"0 2px 16px rgba(0,0,0,0.25)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <span className="df" style={{fontSize:26,fontWeight:900,color:C.white,letterSpacing:"0.5px"}}>
+          Tax<span style={{color:C.gold}}>AR</span>
+        </span>
+        <span style={{background:C.gold,color:C.navy,fontSize:9,fontWeight:800,
+          padding:"2px 8px",borderRadius:10,letterSpacing:"0.5px"}}>BETA</span>
+      </div>
+      <div style={{display:"flex",gap:24}}>
+        {["Metodología","Fuentes","Acerca de"].map(l=>
+          <span key={l} style={{fontSize:13,color:"rgba(255,255,255,0.6)",cursor:"pointer"}}>{l}</span>
+        )}
+      </div>
+    </nav>
+
+    {/* HERO */}
+    <section style={{background:`linear-gradient(145deg,${C.navy} 0%,${C.navy2} 60%,#1A3560 100%)`,
+      padding:"90px 32px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:"-80px",left:"-80px",width:380,height:380,
+        borderRadius:"50%",background:"rgba(212,175,55,0.06)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:0,right:"-60px",width:260,height:260,
+        borderRadius:"50%",background:"rgba(59,111,160,0.15)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:"60%",
+        height:1,background:`linear-gradient(90deg,transparent,${C.gold},transparent)`,opacity:.4}}/>
+      <div style={{position:"relative",maxWidth:680,margin:"0 auto"}}>
+        <div className="fu" style={{display:"inline-block",background:"rgba(212,175,55,0.12)",
+          border:"1px solid rgba(212,175,55,0.3)",borderRadius:20,padding:"4px 16px",marginBottom:20,
+          fontSize:11,color:C.gold,fontWeight:600,letterSpacing:"1px",textTransform:"uppercase"}}>
+          Transparencia Fiscal · Datos Oficiales · Argentina
+        </div>
+        <h1 className="df fu" style={{fontSize:72,fontWeight:900,color:C.white,margin:"0 0 8px",
+          lineHeight:.95,letterSpacing:"-2px",animationDelay:"80ms"}}>
+          Tax<span style={{color:C.gold}}>AR</span>
+        </h1>
+        <p className="fu" style={{fontSize:22,fontWeight:600,color:"rgba(255,255,255,0.80)",
+          margin:"0 0 14px",animationDelay:"160ms"}}>Transparencia Fiscal para Todos</p>
+        <p className="fu" style={{fontSize:16,color:"rgba(255,255,255,0.56)",margin:"0 0 40px",
+          lineHeight:1.75,animationDelay:"240ms"}}>
+          Explorá cómo se recaudan y utilizan los impuestos en Argentina.<br/>
+          Datos oficiales, lenguaje claro, sin rodeos.
+        </p>
+        <div className="fu" style={{display:"flex",gap:14,justifyContent:"center",
+          flexWrap:"wrap",animationDelay:"320ms"}}>
+          <button className="ctag"
+            onClick={()=>document.getElementById("taxar-mapa").scrollIntoView({behavior:"smooth"})}
+            style={{padding:"15px 32px",borderRadius:12,border:"none",background:C.gold,
+              color:C.navy,fontWeight:800,fontSize:15,cursor:"pointer",
+              fontFamily:"'Outfit',sans-serif",boxShadow:"0 4px 24px rgba(212,175,55,0.38)",
+              transition:"all .2s"}}>
+            🗺️ Explorar Córdoba
+          </button>
+          <button className="ctaw" style={{padding:"15px 32px",borderRadius:12,
+            border:"2px solid rgba(255,255,255,0.26)",background:"transparent",
+            color:C.white,fontWeight:600,fontSize:15,cursor:"pointer",
+            fontFamily:"'Outfit',sans-serif",transition:"all .2s"}}>
+            📋 Ver Metodología
+          </button>
+        </div>
+      </div>
+    </section>
+
+    {/* STATS BAR */}
+    <div style={{background:C.white,borderBottom:`1px solid ${C.border}`,padding:"20px 32px",
+      display:"flex",justifyContent:"center",gap:56,flexWrap:"wrap"}}>
+      {[["1","Provincia cargada"],["2023","Ejercicio fiscal"],
+        ["3","Fuentes oficiales"],["Dic 2023","Última actualización"]].map(([v,l])=>
+        <div key={l} style={{textAlign:"center"}}>
+          <div className="df" style={{fontSize:24,fontWeight:900,color:C.navy}}>{v}</div>
+          <div style={{fontSize:11,color:C.muted,marginTop:2}}>{l}</div>
+        </div>
+      )}
+    </div>
+
+    {/* MAPA */}
+    <section id="taxar-mapa" style={{padding:"52px 32px",maxWidth:1100,margin:"0 auto"}}>
+      <div style={{textAlign:"center",marginBottom:32}}>
+        <h2 className="df" style={{fontSize:34,fontWeight:800,color:C.navy,margin:"0 0 8px"}}>
+          Mapa Fiscal de Argentina
+        </h2>
+        <p style={{fontSize:14,color:C.muted}}>
+          Seleccioná una provincia. Solo <strong>Córdoba</strong> tiene datos disponibles en este MVP.
+        </p>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:32,alignItems:"start"}}>
+        <ArgMap onSelect={onProv}/>
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          <Card style={{border:`2px solid ${C.gold}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <div style={{width:4,height:28,background:C.gold,borderRadius:2}}/>
+              <h3 style={{fontSize:15,fontWeight:700,color:C.navy}}>Estado de datos</h3>
+            </div>
+            {[["#3A6FA3","22 provincias + CABA – datos en construcción"],
+              [C.navy,"Córdoba – datos oficiales disponibles (2023)"],
+              [C.gold,"Hover activo sobre el mapa"]].map(([col,lbl])=>
+              <div key={lbl} style={{display:"flex",alignItems:"center",gap:10,fontSize:13,marginBottom:8}}>
+                <span style={{width:13,height:13,borderRadius:4,background:col,flexShrink:0}}/>
+                {lbl}
+              </div>
+            )}
+          </Card>
+          <Card>
+            <h3 style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:12}}>Provincias</h3>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,
+              maxHeight:290,overflowY:"auto",paddingRight:4}}>
+              {PROVS.filter(p=>p[0]!=="antartida").map(p=>
+                <button key={p[0]} className="pbtn"
+                  onClick={()=>onProv({id:p[0],name:p[1],hasData:p[2]})}
+                  style={{padding:"6px 9px",borderRadius:8,
+                    border:`1px solid ${p[2]?C.gold:C.border}`,
+                    background:p[2]?C.navy:C.bg,color:p[2]?C.white:C.muted,
+                    fontSize:11,cursor:"pointer",fontWeight:p[2]?700:400,
+                    textAlign:"left",transition:"all .15s",fontFamily:"'Outfit',sans-serif"}}>
+                  {p[2]?"★ ":""}{p[1]}
+                </button>
+              )}
+            </div>
+          </Card>
+        </div>
+      </div>
+    </section>
+
+    {/* DASHBOARD */}
+    {showDB&&<section ref={dashRef} style={{padding:"0 32px 64px",maxWidth:1100,margin:"0 auto"}}>
+      <div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navy2} 100%)`,
+        borderRadius:16,padding:"28px 32px",marginBottom:26,display:"flex",
+        justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",
+        gap:16,boxShadow:"0 8px 32px rgba(26,43,72,0.18)"}}>
+        <div>
+          <div style={{fontSize:11,color:C.gold,fontWeight:700,marginBottom:4,letterSpacing:"1.5px"}}>
+            PROVINCIA SELECCIONADA
+          </div>
+          <h2 className="df" style={{fontSize:30,fontWeight:900,color:C.white,margin:0}}>
+            📍 Provincia de Córdoba
+          </h2>
+          <p style={{fontSize:12,color:"rgba(255,255,255,0.55)",margin:"4px 0 0"}}>
+            Ejercicio fiscal 2023 · Datos oficiales publicados
+          </p>
+        </div>
+        <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+          {[["$1.85 B","Presupuesto"],["$0.96 B","Rec. Propia"],["35.1%","Masa Salarial"]].map(([v,l])=>
+            <div key={l} style={{background:"rgba(212,175,55,0.15)",
+              border:"1px solid rgba(212,175,55,0.32)",borderRadius:12,
+              padding:"10px 16px",textAlign:"center"}}>
+              <div className="df" style={{fontSize:20,fontWeight:900,color:C.gold}}>{v}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",marginTop:2}}>{l}</div>
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={{display:"flex",gap:4,marginBottom:28,background:C.white,borderRadius:14,
+        padding:6,boxShadow:"0 1px 12px rgba(26,43,72,0.06)",overflowX:"auto",
+        border:`1px solid ${C.border}`}}>
+        {TABS.map(t=>
+          <button key={t.id} className="tbtn" onClick={()=>setTab(t.id)}
+            style={{padding:"11px 22px",borderRadius:10,border:"none",
+              background:tab===t.id?C.navy:"transparent",
+              color:tab===t.id?C.white:C.muted,
+              fontWeight:tab===t.id?700:500,fontSize:14,cursor:"pointer",
+              whiteSpace:"nowrap",transition:"all .2s",fontFamily:"'Outfit',sans-serif",
+              boxShadow:tab===t.id?"0 2px 12px rgba(26,43,72,0.2)":"none"}}>
+            {t.lbl}
+          </button>
+        )}
+      </div>
+      {tab==="budget"&&<Budget/>}
+      {tab==="taxes"&&<Taxes/>}
+      {tab==="salary"&&<Salaries/>}
+      {tab==="calc"&&<Calc/>}
+    </section>}
+
+    {/* FOOTER */}
+    <footer style={{background:C.navy,padding:"32px",textAlign:"center",
+      borderTop:"1px solid rgba(212,175,55,0.2)"}}>
+      <div className="df" style={{fontSize:22,fontWeight:900,color:C.white,marginBottom:8}}>
+        Tax<span style={{color:C.gold}}>AR</span>
+      </div>
+      <p style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginBottom:6}}>
+        Transparencia fiscal para ciudadanos argentinos · Datos de acceso público
+      </p>
+      <p style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>
+        Fuentes: Ministerio de Finanzas Prov. de Córdoba · AgRC · INDEC · 2023
+      </p>
+    </footer>
+
+    {modal&&<ProvinceModal prov={modal} onClose={()=>setModal(null)}/>}
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<TaxAR/>);
+</script>
+</body>
+</html>

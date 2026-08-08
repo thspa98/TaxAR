@@ -1,0 +1,24 @@
+jurisdiccion,impuesto,valor,unidad,base,norma,fuente_url,verificado
+# ---------------------------------------------------------------------------
+# Alícuotas de los impuestos provinciales que paga una persona.
+#
+# CÓMO SE COMPLETA
+#   jurisdiccion  slug canónico (ver etl/jurisdicciones.py): cordoba, caba, ...
+#   impuesto      iibb-minorista | inmobiliario-urbano | automotor | sellos-alquiler
+#   valor         el número, sin el signo %
+#   unidad        pct  (porcentaje) | pesos (monto fijo)
+#   base          sobre qué se aplica: "facturación", "valuación fiscal",
+#                 "valor del vehículo", "monto total del contrato"
+#   norma         la ley impositiva o artículo exacto. Ej: "Ley 15.558, art. 12"
+#   fuente_url    enlace al boletín oficial o al texto de la norma
+#   verificado    la fecha en que se leyó la norma, en formato AAAA-MM-DD
+#
+# REGLA: ninguna fila entra sin `norma` y `fuente_url`. Un sitio de
+# transparencia no puede publicar una alícuota que no se pueda ir a chequear.
+# El ETL rechaza las filas incompletas y la página muestra "sin verificar" en
+# vez de inventar un número.
+#
+# NO SIRVEN como fuente los blogs contables ni las notas periodísticas que
+# resumen alícuotas: varias están generadas con IA y lo declaran en su propio
+# pie. Sólo el boletín oficial de cada provincia o el texto de la ley.
+# ---------------------------------------------------------------------------

@@ -1,0 +1,298 @@
+---
+import Base from '../layouts/Base.astro';
+import Desplegable from '../components/Desplegable.astro';
+import Explicacion from '../components/Explicacion.astro';
+import Fuente from '../components/Fuente.astro';
+import ScriptMapa from '../components/ScriptMapa.astro';
+import Termino from '../components/Termino.astro';
+import ComparadorAlicuotas from '../components/charts/ComparadorAlicuotas.jsx';
+import RankingInteractivo from '../components/charts/RankingInteractivo.jsx';
+import {
+  ALICUOTAS, ANIOS, ANIO_ACTUAL, JURISDICCIONES, MAPA,
+  avisoFaltantes, fila, jur, ranking, rankingConNombres,
+} from '../lib/datos';
+import { alicuota, num, pesos, veces } from '../lib/formato';
+
+const A = ANIO_ACTUAL;
+const aviso = avisoFaltantes(A);
+const { datos: alic, impuestos, orden } = ALICUOTAS;
+
+// Los extremos de cada impuesto, para abrir la página con algo concreto.
+const extremos = orden.map((k) => {
+  const con = Object.entries(alic)
+    .filter(([, a]) => a[k])
+    .map(([slug, a]) => ({ slug, ...a[k] }));
+  const alto = [...con].sort((x, y) => y.max - x.max)[0];
+  const bajo = [...con].sort((x, y) => x.max - y.max)[0];
+  return { k, ...impuestos[k], alto, bajo, distintas: alto.max !== bajo.max };
+});
+
+// El dato secundario: lo que efectivamente recauda cada una por habitante.
+const porAnio: Record<string, any[]> = {};
+for (const a of ANIOS) porAnio[String(a)] = rankingConNombres('impuestos_por_habitante', a);
+const imp = ranking('impuestos_por_habitante', A);
+const brechaRec = veces(imp[0].valor, imp[imp.length - 1].valor);
+
+const jurSimple = Object.fromEntries(
+  Object.entries(JURISDICCIONES).map(([s, j]) => [s, { nombre: j.nombre, corto: j.corto }]),
+);
+---
+
+<Base
+  titulo="Dónde se pagan más impuestos provinciales"
+  descripcion="Alícuotas de Ingresos Brutos y Sellos en las 24 jurisdicciones argentinas, comparables entre sí, con mapa para elegir dos y ponerlas lado a lado."
+>
+  <ScriptMapa />
+  <section class="encabezado">
+    <div class="contenedor">
+      <p class="pildora pildora-oro">Alícuotas provinciales</p>
+      <h1 class="display titulo">¿Cuánto te cobra de impuestos tu provincia?</h1>
+      <p class="bajada">
+        Cada provincia fija sus propias alícuotas de Ingresos Brutos y Sellos. Un mismo
+        comercio paga <strong>{alicuota(extremos[0].bajo.max)}%</strong> en una jurisdicción y
+        {' '}<strong>{alicuota(extremos[0].alto.max)}%</strong> en otra por exactamente la misma
+        actividad. Y escriturar una casa cuesta desde
+        {' '}<strong>{alicuota(extremos[3].bajo.max)}%</strong> hasta
+        {' '}<strong>{alicuota(extremos[3].alto.max)}%</strong> del precio según dónde esté.
+      </p>
+      <p class="resumen-seccion"><b>Qué encontrás acá.</b> Las alícuotas de Ingresos Brutos y Sellos de las 24 jurisdicciones, comparables entre sí, más cuánto recauda cada provincia por habitante con sus propios impuestos.</p>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="contenedor">
+
+      <!-- ============ QUÉ PAGA UNA PERSONA ============ -->
+      <div class="grilla g-4">
+        {extremos.map((e) => (
+          <div class="tarjeta imp-box" style={`border-top-color:${e.color}`}>
+            <p class="etiqueta">{e.corto}</p>
+            <p class="imp-rango">
+              {alicuota(e.bajo.max)}%<span> a </span>{alicuota(e.alto.max)}%
+            </p>
+            <p class="imp-quien">{e.quien}</p>
+            <p class="imp-det">
+              Más alta en <strong>{jur(e.alto.slug).corto}</strong>, más baja en
+              {' '}<strong>{jur(e.bajo.slug).corto}</strong>.
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <!-- ============ LA TABLA Y EL COMPARADOR ============ -->
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">Las alícuotas de las 24 jurisdicciones</h2>
+        <p class="bajada chico" style="margin-bottom:20px">
+          Ordená por cualquier columna, o tocá el botón para elegir dos provincias en el
+          mapa y compararlas. Casi todas las alícuotas son rangos porque cada provincia
+          cobra distinto según el tamaño y la actividad del contribuyente.
+        </p>
+
+        <ComparadorAlicuotas
+          client:visible
+          datos={alic}
+          impuestos={impuestos}
+          orden={orden}
+          jurisdicciones={jurSimple}
+          indecASlug={MAPA.indec_a_slug}
+          atribucion={MAPA.atribucion}
+        />
+
+        <p class="advertencia">
+          <strong>Cómo leer esto.</strong> {ALICUOTAS.advertencia}
+        </p>
+      </div>
+
+      <!-- ============ QUÉ SIGNIFICA CADA UNO ============ -->
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">Qué es cada impuesto, y quién lo termina pagando</h2>
+        <dl class="explicaciones">
+          {orden.map((k) => (
+            <div class="expl-item" style={`border-left-color:${impuestos[k].color}`}>
+              <dt>{impuestos[k].etiqueta}</dt>
+              <dd>{impuestos[k].explica}</dd>
+              <p class="expl-base">Se calcula {impuestos[k].base}</p>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion titulo="Por qué Ingresos Brutos es el que más te afecta sin que lo veas">
+          <p>
+            De los cuatro, Ingresos Brutos es el único que pagás todos los días sin
+            enterarte. No figura en el ticket, pero está adentro del precio: se cobra sobre
+            la facturación de cada eslabón de la cadena —el productor, el mayorista, el
+            comercio— y cada uno lo traslada al siguiente. Eso se llama
+            <strong> efecto cascada</strong>, y hace que el impacto final sobre el precio
+            sea bastante mayor que la alícuota nominal.
+          </p>
+          <p>
+            Por eso las provincias cobran mucho menos —a veces cero— a la industria y a la
+            producción primaria: para no encarecer lo que se fabrica dentro de su
+            territorio. La diferencia entre lo que paga un comercio y lo que paga una
+            fábrica en la misma provincia es deliberada.
+          </p>
+        </Explicacion>
+      </div>
+
+      <!-- ============ EL DATO SECUNDARIO ============ -->
+      <div style="margin-top:26px"><Desplegable titulo="Ranking de recaudación propia por habitante" nota="Cuánto junta cada provincia con sus impuestos, dividido por su población." accion="Ver ranking">
+        <p class="ojo-cuidado">
+          Una alícuota alta no produce necesariamente una recaudación alta por habitante, ni
+          al revés: donde hay más actividad económica se recauda más aunque se cobre menos.
+        </p>
+
+        {aviso && <p class="aviso-dato"><strong>Falta una jurisdicción en {A}:</strong> {aviso}</p>}
+
+        <RankingInteractivo
+          client:visible
+          datosPorAnio={porAnio}
+          anios={ANIOS}
+          anioInicial={A}
+          unidad="pesos"
+          sufijo="por habitante"
+        />
+
+        <Fuente clave="serie_aif" nota="Recursos tributarios de origen provincial · población ajustada al Censo 2022" />
+      </Desplegable></div>
+
+      <!-- ============ INMOBILIARIO Y AUTOMOTOR ============ -->
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">Inmobiliario y Automotor: por qué no alcanza con la alícuota</h2>
+        <p class="bajada chico" style="margin-bottom:22px">
+          Los otros dos impuestos que paga una persona funcionan distinto. La alícuota no se
+          aplica sobre un monto que vos conocés —lo que facturaste, lo que dice el contrato—
+          sino sobre una <strong>valuación que calcula el Estado</strong>. Comparar sólo las
+          alícuotas de estos dos daría una conclusión equivocada.
+        </p>
+
+        <div class="grilla g-2">
+          {Object.entries(ALICUOTAS.bases).map(([k, b]) => (
+            <article class="base-box">
+              <h3 class="base-tit">{b.etiqueta}</h3>
+
+              <p class="base-lbl">Sobre qué se calcula</p>
+              <p class="base-txt">{b.estandar}</p>
+
+              <p class="base-lbl">Por qué importa</p>
+              <p class="base-txt">{b.por_que_importa}</p>
+
+              <p class="base-lbl">Qué cambia según la provincia</p>
+              <ul class="base-lista">
+                {b.variantes.map(([donde, que]) => (
+                  <li><strong>{donde}:</strong> {que}</li>
+                ))}
+              </ul>
+
+              <p class="base-esp">
+                Con reglas o coeficientes propios: {b.especiales.join(' · ')}
+              </p>
+            </article>
+          ))}
+        </div>
+
+        <p class="advertencia">
+          <strong>Qué falta para cerrarlo.</strong> Con las bases identificadas, el paso que
+          queda es tomar una propiedad y un vehículo de referencia y calcular cuánto paga
+          ese mismo bien en cada jurisdicción. Recién ahí la comparación es honesta: hoy dos
+          provincias con la misma alícuota pueden cobrarte montos muy distintos por la misma
+          casa, y el número por sí solo no lo muestra.
+        </p>
+      </div>
+
+    </div>
+  </section>
+</Base>
+
+<style>
+  .encabezado { background: var(--navy); color: #fff; padding-block: 52px 44px; }
+  .encabezado .pildora { background: rgba(212,175,55,.2); border-color: rgba(212,175,55,.45); color: var(--oro-claro); }
+  .titulo { font-size: clamp(2rem, 5vw, 3.1rem); margin: 16px 0 14px; }
+  .resumen-seccion {
+    margin-top: 16px; max-width: 700px;
+    font-size: .93rem; line-height: 1.68; color: #9FB3D0;
+    border-left: 2px solid rgba(212, 175, 55, .55); padding-left: 14px;
+  }
+  .resumen-seccion b { color: var(--oro-claro); font-weight: 600; }
+  .encabezado .bajada { color: #CBD8EA; max-width: 700px; }
+  .encabezado strong { color: #fff; font-weight: 600; }
+  .h2 { font-size: clamp(1.35rem, 2.7vw, 1.8rem); color: var(--navy); margin-bottom: 5px; }
+
+  .imp-box { border-top: 4px solid var(--navy-2); padding: 20px; }
+  .imp-rango {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+    font-size: 1.9rem; line-height: 1.05; color: var(--navy);
+    margin: 7px 0 8px; font-variant-numeric: tabular-nums;
+  }
+  .imp-rango span { font-size: 1.1rem; color: var(--tenue-2); font-weight: 700; }
+  .imp-quien { font-size: .8rem; color: var(--tenue); line-height: 1.45; }
+  .imp-det { font-size: .82rem; color: var(--tenue); margin-top: 9px;
+             border-top: 1px solid var(--borde); padding-top: 9px; line-height: 1.5; }
+  .imp-det strong { color: var(--navy); }
+
+  .advertencia {
+    margin-top: 20px; padding: 15px 18px;
+    background: rgba(180, 83, 9, .06);
+    border: 1px solid rgba(180, 83, 9, .26);
+    border-left: 4px solid var(--alerta);
+    border-radius: var(--r-md);
+    font-size: .89rem; line-height: 1.65; color: var(--tinta);
+  }
+  .advertencia strong { color: var(--alerta); }
+
+  .explicaciones { display: grid; gap: 14px; }
+  .expl-item { border-left: 4px solid var(--navy-2); padding-left: 16px; }
+  .expl-item dt { font-weight: 700; color: var(--navy); font-size: 1rem; margin-bottom: 5px; }
+  .expl-item dd { font-size: .93rem; color: var(--tinta); line-height: 1.65; }
+  .expl-base { font-size: .79rem; color: var(--tenue-2); margin-top: 5px; }
+
+  .base-box {
+    background: var(--fondo);
+    border: 1px solid var(--borde);
+    border-top: 4px solid var(--navy);
+    border-radius: var(--r-md);
+    padding: 20px 22px;
+  }
+  .base-tit { font-size: 1.12rem; color: var(--navy); margin-bottom: 14px; }
+  .base-lbl {
+    font-size: .68rem; font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--tenue-2);
+    margin-top: 15px; margin-bottom: 5px;
+  }
+  .base-lbl:first-of-type { margin-top: 0; }
+  .base-txt { font-size: .92rem; line-height: 1.6; color: var(--tinta); }
+  .base-lista { list-style: none; margin-top: 4px; }
+  .base-lista li {
+    font-size: .89rem; line-height: 1.58; color: var(--tinta);
+    padding: 7px 0 7px 15px; position: relative;
+    border-bottom: 1px solid var(--borde);
+  }
+  .base-lista li:last-child { border-bottom: 0; }
+  .base-lista li::before {
+    content: ''; position: absolute; left: 0; top: 15px;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--oro);
+  }
+  .base-lista strong { color: var(--navy); }
+  .base-esp {
+    margin-top: 14px; padding-top: 11px;
+    border-top: 1px solid var(--borde-2);
+    font-size: .79rem; color: var(--tenue);
+  }
+
+  .ojo-cuidado {
+    font-size: .88rem; color: var(--tenue); background: var(--fondo);
+    border: 1px solid var(--borde); border-radius: var(--r-md);
+    padding: 12px 15px; margin-bottom: 18px; line-height: 1.6;
+  }
+
+  .aviso-dato {
+    background: rgba(180, 83, 9, .07);
+    border: 1px solid rgba(180, 83, 9, .28);
+    border-left: 4px solid var(--alerta);
+    border-radius: var(--r-md);
+    padding: 14px 18px; margin-bottom: 18px;
+    font-size: .93rem; line-height: 1.6;
+  }
+  .aviso-dato strong { color: var(--alerta); }
+</style>

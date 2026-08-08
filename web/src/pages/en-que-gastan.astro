@@ -1,0 +1,263 @@
+---
+import Base from '../layouts/Base.astro';
+import Desplegable from '../components/Desplegable.astro';
+import Explicacion from '../components/Explicacion.astro';
+import Fuente from '../components/Fuente.astro';
+import RankingInteractivo from '../components/charts/RankingInteractivo.jsx';
+import {
+  ANIOS_FF, ANIO_ACTUAL, ANIO_FF, FINALIDAD, finalidadDe, jur, rankingFF, rankingFFConNombres,
+} from '../lib/datos';
+import { num, pesos, veces } from '../lib/formato';
+
+const A = ANIO_FF;
+
+const salud = rankingFF('salud_hab', A);
+const educacion = rankingFF('educacion_hab', A);
+const admin = rankingFF('administracion_pct', A);
+
+const brechaSalud = veces(salud[0].valor, salud[salud.length - 1].valor);
+const brechaEduc = veces(educacion[0].valor, educacion[educacion.length - 1].valor);
+
+const porAnioSalud: Record<string, any[]> = {};
+const porAnioEduc: Record<string, any[]> = {};
+for (const a of ANIOS_FF) {
+  porAnioSalud[String(a)] = rankingFFConNombres('salud_hab', a);
+  porAnioEduc[String(a)] = rankingFFConNombres('educacion_hab', a);
+}
+
+// El promedio del país de cada finalidad, para dar una referencia.
+const promedio = (campo: string) => {
+  const vs = Object.keys(FINALIDAD.datos)
+    .map((s) => finalidadDe(s, A)?.[campo])
+    .filter((v): v is number => typeof v === 'number');
+  return vs.reduce((a, b) => a + b, 0) / vs.length;
+};
+
+const RUBROS = [
+  { k: 'social', campo: 'social_pct' },
+  { k: 'administracion', campo: 'administracion_pct' },
+  { k: 'economicos', campo: 'economicos_pct' },
+  { k: 'seguridad', campo: 'seguridad_pct' },
+  { k: 'deuda', campo: 'deuda_pct' },
+].map((r) => ({ ...r, ...FINALIDAD.finalidades[r.k], prom: promedio(r.campo) }));
+---
+
+<Base
+  titulo="En qué gastan las provincias"
+  descripcion={`Cuánto destina cada provincia argentina a salud, educación, seguridad y administración en ${A}, y cómo se compara con el resto.`}
+>
+  <section class="encabezado">
+    <div class="contenedor">
+      <p class="pildora pildora-oro">Gasto por finalidad · {A}</p>
+      <h1 class="display titulo">No cuánto gastan. En qué.</h1>
+      <p class="bajada">
+        Un {jur(salud[0].slug).gentilicio.slice(0, -1)} recibe
+        {' '}<strong>{pesos(salud[0].valor)}</strong> de presupuesto provincial de salud al año.
+        Un {jur(salud[salud.length - 1].slug).gentilicio.slice(0, -1)},
+        {' '}<strong>{pesos(salud[salud.length - 1].valor)}</strong>. Son
+        {' '}<strong>{brechaSalud} veces</strong> de diferencia por vivir en un lado o en otro.
+      </p>
+      <p class="resumen-seccion"><b>Qué encontrás acá.</b> Adónde va el presupuesto de cada
+        provincia: salud, educación, jubilaciones, seguridad, administración y obra pública.
+        Es la única sección que responde en qué se gasta y no sólo cuánto.</p>
+      <p class="aviso-anio">
+        <b>Por qué esta sección va un año atrás.</b> El resto del sitio muestra {ANIO_ACTUAL},
+        pero el Ministerio de Economía publica la apertura por finalidad varios meses después
+        que el resto de la ejecución: hoy el último año disponible es {A}. No es una decisión
+        nuestra ni una provincia que falta — el dato de {ANIO_ACTUAL} todavía no existe.
+      </p>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="contenedor">
+
+      <!-- ============ EL REPARTO PROMEDIO ============ -->
+      <div class="tarjeta tarjeta-p">
+        <h2 class="display h2">Adónde va, en promedio, el presupuesto de una provincia</h2>
+        <p class="bajada chico" style="margin-bottom:22px">
+          Promedio de las 24 jurisdicciones en {A}. Cada provincia se aparta de esto, a veces
+          bastante — y ahí está lo interesante.
+        </p>
+
+        <div class="rubros">
+          {RUBROS.map((r) => (
+            <div class="rubro" style={`--c:${r.color}`}>
+              <div class="r-cab">
+                <span class="r-pto"></span>
+                <span class="r-nom">{r.etiqueta}</span>
+                <span class="r-pct">{num(r.prom, 1)}%</span>
+              </div>
+              <div class="r-track"><span style={`width:${r.prom}%`}></span></div>
+              <p class="r-expl">{r.explica}</p>
+            </div>
+          ))}
+        </div>
+        <Fuente clave="serie_ff" />
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion titulo="Lo primero que llama la atención">
+          <p>
+            En la mayoría de las provincias, más de la mitad del presupuesto va a
+            <strong> servicios sociales</strong> — salud, educación, jubilaciones y asistencia.
+            Eso desmiente la idea de que el gasto provincial es sobre todo burocracia.
+          </p>
+          <p>
+            Pero adentro de ese bloque hay una sorpresa: en varias provincias
+            <strong> las jubilaciones pesan tanto o más que la salud</strong>. Las cajas
+            previsionales que no se transfirieron a la Nación en los años noventa siguen a
+            cargo de la provincia, y cuando tienen déficit se cubren con impuestos que
+            podrían ir a hospitales o escuelas.
+          </p>
+        </Explicacion>
+      </div>
+
+      <!-- ============ RANKING SALUD ============ -->
+      <div style="margin-top:26px">
+        <Desplegable
+          titulo="Ranking de gasto en salud por habitante"
+          nota={`De ${pesos(salud[0].valor)} a ${pesos(salud[salud.length - 1].valor)} según la provincia: ${brechaSalud} veces de diferencia.`}
+          accion="Ver ranking"
+        >
+          <RankingInteractivo
+            client:visible
+            datosPorAnio={porAnioSalud}
+            anios={ANIOS_FF}
+            anioInicial={A}
+            unidad="pesos"
+            sufijo="de salud por habitante"
+          />
+          <Fuente clave="serie_ff" nota="Población ajustada al Censo 2022" />
+        </Desplegable>
+      </div>
+
+      <!-- ============ RANKING EDUCACIÓN ============ -->
+      <div style="margin-top:18px">
+        <Desplegable
+          titulo="Ranking de gasto en educación por habitante"
+          nota={`De ${pesos(educacion[0].valor)} a ${pesos(educacion[educacion.length - 1].valor)}: ${brechaEduc} veces de diferencia.`}
+          accion="Ver ranking"
+        >
+          <RankingInteractivo
+            client:visible
+            datosPorAnio={porAnioEduc}
+            anios={ANIOS_FF}
+            anioInicial={A}
+            unidad="pesos"
+            sufijo="de educación por habitante"
+          />
+          <Fuente clave="serie_ff" nota="Incluye cultura. Población ajustada al Censo 2022" />
+        </Desplegable>
+      </div>
+
+      <!-- ============ LOS EXTREMOS ============ -->
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">Las que más y las que menos priorizan cada área</h2>
+        <p class="bajada chico" style="margin-bottom:18px">
+          Medido como porcentaje del presupuesto propio, para que el tamaño de la provincia
+          no distorsione la comparación.
+        </p>
+
+        <div class="tabla-scroll">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Área</th>
+                <th>La que más prioriza</th>
+                <th class="der">%</th>
+                <th>La que menos</th>
+                <th class="der">%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                // Seguridad va en pesos por habitante porque como porcentaje del
+                // presupuesto se confunde con provincias que simplemente gastan
+                // poco en todo lo demás.
+                ['Salud', rankingFF('salud_pct', A), 'pct'],
+                ['Educación y cultura', rankingFF('educacion_pct', A), 'pct'],
+                ['Seguridad', rankingFF('seguridad_hab', A), 'pesos'],
+                ['Administración', admin, 'pct'],
+              ].map(([nombre, r, unidad]: any) => {
+                const fmt = (v: number) => (unidad === 'pesos' ? pesos(v) : `${num(v, 1)}%`);
+                return (
+                  <tr>
+                    <td><strong>{nombre}</strong></td>
+                    <td><a href={`/provincia/${r[0].slug}/`}>{jur(r[0].slug).corto}</a></td>
+                    <td class="der num">{fmt(r[0].valor)}</td>
+                    <td><a href={`/provincia/${r[r.length - 1].slug}/`}>{jur(r[r.length - 1].slug).corto}</a></td>
+                    <td class="der num">{fmt(r[r.length - 1].valor)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p class="mini" style="margin-top:12px;color:var(--tenue)">
+          Seguridad se muestra en pesos por habitante; el resto, como porcentaje del
+          presupuesto provincial.
+        </p>
+        <Fuente clave="serie_ff" />
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion variante="atencion" titulo="Tres advertencias antes de sacar conclusiones">
+          <p>
+            <strong>Gastar más no es atender mejor.</strong> Este dato mide cuánta plata entra
+            al sistema, no cuántos chicos se vacunan ni cuánto se espera un turno. Los
+            indicadores de resultado no se publican de forma comparable entre las 24
+            jurisdicciones.
+          </p>
+          <p>
+            <strong>Falta lo que ponen la Nación y los municipios.</strong> Un hospital
+            nacional o un centro de salud municipal no aparecen acá. En provincias donde el
+            municipio sostiene buena parte de la atención primaria, la cifra provincial
+            subestima lo que recibe el vecino.
+          </p>
+          <p>
+            <strong>La geografía encarece.</strong> Sostener una escuela rural cuesta más por
+            alumno que una urbana. Una provincia extensa y despoblada necesita gastar más por
+            persona para dar el mismo servicio.
+          </p>
+        </Explicacion>
+      </div>
+
+    </div>
+  </section>
+</Base>
+
+<style>
+  .encabezado { background: var(--navy); color: #fff; padding-block: 52px 44px; }
+  .encabezado .pildora { background: rgba(212,175,55,.2); border-color: rgba(212,175,55,.45); color: var(--oro-claro); }
+  .titulo { font-size: clamp(2.1rem, 5.4vw, 3.3rem); margin: 16px 0 14px; }
+  .resumen-seccion {
+    margin-top: 16px; max-width: 700px;
+    font-size: .93rem; line-height: 1.68; color: #9FB3D0;
+    border-left: 2px solid rgba(212, 175, 55, .55); padding-left: 14px;
+  }
+  .resumen-seccion b { color: var(--oro-claro); font-weight: 600; }
+  .aviso-anio {
+    margin-top: 14px; max-width: 700px;
+    font-size: .88rem; line-height: 1.65; color: #C9B98A;
+    background: rgba(212, 175, 55, .1);
+    border: 1px solid rgba(212, 175, 55, .3);
+    border-radius: var(--r-md); padding: 12px 16px;
+  }
+  .aviso-anio b { color: var(--oro-claro); font-weight: 600; }
+  .encabezado .bajada { color: #CBD8EA; max-width: 680px; }
+  .encabezado strong { color: #fff; font-weight: 600; }
+  .h2 { font-size: clamp(1.35rem, 2.7vw, 1.8rem); color: var(--navy); margin-bottom: 5px; }
+
+  .rubros { display: grid; gap: 20px; }
+  .r-cab { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .r-pto { width: 12px; height: 12px; border-radius: 3px; background: var(--c); flex: none; }
+  .r-nom { font-weight: 700; color: var(--navy); }
+  .r-pct {
+    margin-left: auto; font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+    font-size: 1.5rem; color: var(--navy); font-variant-numeric: tabular-nums;
+  }
+  .r-track { height: 9px; border-radius: 5px; background: var(--borde); overflow: hidden; }
+  .r-track > span { display: block; height: 100%; background: var(--c); border-radius: 5px; }
+  .r-expl { font-size: .88rem; color: var(--tenue); line-height: 1.6; margin-top: 7px; }
+</style>

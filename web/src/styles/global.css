@@ -1,0 +1,227 @@
+/* =========================================================================
+   global.css — Sistema de diseño de TaxAR.
+
+   Todo el color y el espaciado del sitio sale de estas variables. Cambiar
+   una acá cambia el sitio entero; no hay colores sueltos en las páginas.
+   ========================================================================= */
+
+:root {
+  /* Marca */
+  --navy:      #1A2B48;
+  --navy-2:    #2D4A7A;
+  --navy-3:    #3B5998;
+  --oro:       #D4AF37;
+  --oro-claro: #F5D060;
+
+  /* Superficies */
+  --fondo:     #F2F5FA;
+  --papel:     #FFFFFF;
+  --borde:     #DDE3EE;
+  --borde-2:   #C9D3E5;
+
+  /* Texto */
+  --tinta:     #1E293B;
+  --tenue:     #64748B;
+  --tenue-2:   #94A3B8;
+
+  /* Semántica: superávit y déficit tienen que distinguirse de un vistazo */
+  --superavit: #059669;
+  --deficit:   #DC2626;
+  --alerta:    #B45309;
+
+  /* Ritmo */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --sombra:    0 1px 3px rgba(26, 43, 72, .07), 0 6px 20px rgba(26, 43, 72, .06);
+  --sombra-lg: 0 4px 12px rgba(26, 43, 72, .10), 0 18px 44px rgba(26, 43, 72, .10);
+
+  --ancho: 1140px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  background: var(--fondo);
+  color: var(--tinta);
+  line-height: 1.6;
+  font-size: 16.5px;
+}
+
+h1, h2, h3, h4 { line-height: 1.15; font-weight: 700; letter-spacing: -.015em; }
+
+.display {
+  font-family: 'Barlow Condensed', 'Outfit', sans-serif;
+  font-weight: 800;
+  letter-spacing: .005em;
+  line-height: 1.05;
+}
+
+a { color: var(--navy-2); text-decoration-color: var(--borde-2); text-underline-offset: 3px; }
+a:hover { color: var(--navy); text-decoration-color: var(--oro); }
+
+/* --- Contenedores ------------------------------------------------------- */
+
+.contenedor { width: 100%; max-width: var(--ancho); margin-inline: auto; padding-inline: 22px; }
+.estrecho   { max-width: 760px; }
+
+.seccion { padding-block: 60px; }
+.seccion-sm { padding-block: 38px; }
+
+/* --- Tarjetas ----------------------------------------------------------- */
+
+.tarjeta {
+  background: var(--papel);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sombra);
+}
+.tarjeta-p { padding: 26px; }
+
+.grilla { display: grid; gap: 18px; }
+.g-2 { grid-template-columns: repeat(2, 1fr); }
+.g-3 { grid-template-columns: repeat(3, 1fr); }
+.g-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* --- Tipografía utilitaria ---------------------------------------------- */
+
+.ojo {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  line-height: 1;
+  letter-spacing: .01em;
+  font-variant-numeric: tabular-nums;
+}
+.etiqueta {
+  font-size: .735rem;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--tenue);
+}
+.bajada  { font-size: 1.08rem; color: var(--tenue); }
+.chico   { font-size: .875rem; }
+.mini    { font-size: .795rem; color: var(--tenue); }
+.num     { font-variant-numeric: tabular-nums; }
+
+.superavit { color: var(--superavit); }
+.deficit   { color: var(--deficit); }
+
+/* --- Píldoras ----------------------------------------------------------- */
+
+.pildora {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  font-size: .78rem; font-weight: 600;
+  background: rgba(26, 43, 72, .07);
+  color: var(--navy);
+  border: 1px solid var(--borde);
+}
+.pildora-oro { background: rgba(212, 175, 55, .16); border-color: rgba(212, 175, 55, .42); color: #8A6D12; }
+
+/* --- Tablas ------------------------------------------------------------- */
+
+.tabla { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.tabla th {
+  text-align: left;
+  font-size: .74rem; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase;
+  color: var(--tenue);
+  padding: 11px 12px;
+  border-bottom: 2px solid var(--borde);
+  white-space: nowrap;
+}
+.tabla td { padding: 11px 12px; border-bottom: 1px solid var(--borde); }
+.tabla tbody tr:hover { background: rgba(26, 43, 72, .028); }
+.tabla .der { text-align: right; }
+.tabla .puesto { color: var(--tenue-2); font-weight: 700; width: 46px; }
+.tabla tbody tr.destacada { background: rgba(212, 175, 55, .1); }
+.tabla tbody tr.destacada:hover { background: rgba(212, 175, 55, .16); }
+
+.tabla-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* --- Barra proporcional dentro de una tabla ------------------------------ */
+
+.barra-dato { height: 7px; border-radius: 4px; background: var(--borde); overflow: hidden; min-width: 60px; }
+.barra-dato > span { display: block; height: 100%; border-radius: 4px; }
+
+/* --- Accesibilidad ------------------------------------------------------ */
+
+:focus-visible { outline: 3px solid var(--oro); outline-offset: 2px; border-radius: 4px; }
+
+.solo-lectores {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* =========================================================================
+   Animaciones de entrada
+
+   Cada sección aparece cuando entra en pantalla. La regla que se sigue acá:
+   la animación sirve para dirigir la atención, no para lucirse. Movimientos
+   cortos (14px), rápidos (0.5s) y una sola vez — nada que se repita ni que
+   obligue a esperar para leer.
+
+   El contenido NUNCA depende del JavaScript: arranca visible y el script
+   sólo agrega el efecto si el navegador lo soporta. Si algo falla, se ve
+   todo igual.
+   ========================================================================= */
+
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* La clase la agrega el script; sin él, el contenido queda visible. */
+.js-anim .anim { opacity: 0; }
+.js-anim .anim.visible { animation: aparecer .5s cubic-bezier(.22, .8, .3, 1) forwards; }
+
+/* Escalonado suave dentro de una grilla: las tarjetas entran una detrás de
+   otra en vez de todas juntas, que se siente más ordenado. */
+.js-anim .anim.visible:nth-child(2) { animation-delay: .06s; }
+.js-anim .anim.visible:nth-child(3) { animation-delay: .12s; }
+.js-anim .anim.visible:nth-child(4) { animation-delay: .18s; }
+.js-anim .anim.visible:nth-child(5) { animation-delay: .24s; }
+
+/* Micro-interacciones: nada se mueve solo, sólo responde al mouse. */
+.tarjeta, .dato-box, .imp-box { transition: transform .2s ease, box-shadow .2s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  html { scroll-behavior: auto; }
+  .js-anim .anim { opacity: 1; }
+  .js-anim .anim.visible { animation: none; }
+}
+
+/* --- Responsive --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .g-4 { grid-template-columns: repeat(2, 1fr); }
+  .g-3 { grid-template-columns: 1fr; }
+  .seccion { padding-block: 42px; }
+}
+
+@media (max-width: 620px) {
+  body { font-size: 16px; }
+  .g-2, .g-4 { grid-template-columns: 1fr; }
+  .tarjeta-p { padding: 20px; }
+  .contenedor { padding-inline: 16px; }
+}
+
+/* --- Recharts ----------------------------------------------------------- */
+
+.recharts-default-tooltip {
+  border-radius: 10px !important;
+  border: 1px solid var(--borde) !important;
+  box-shadow: var(--sombra-lg) !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: .85rem !important;
+}
+.recharts-cartesian-axis-tick text { font-size: 11.5px; fill: var(--tenue); }
+.recharts-surface { overflow: visible; }

@@ -1,0 +1,24 @@
+{
+  "name": "taxar-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TaxAR — transparencia fiscal de Argentina explicada para cualquiera",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "datos": "python ../etl/exportar_json.py"
+  },
+  "dependencies": {
+    "@astrojs/react": "^4.2.1",
+    "astro": "^5.5.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5"
+  }
+}

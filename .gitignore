@@ -1,0 +1,15 @@
+# Dependencias y build
+web/node_modules/
+web/dist/
+web/.astro/
+
+# Python
+__pycache__/
+*.pyc
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Los archivos de fuentes/ SÍ se versionan a propósito: son la prueba
+# de dónde salió cada número publicado.

@@ -1,0 +1,428 @@
+---
+/**
+ * Base.astro — Estructura común de todas las páginas.
+ * Cabecera, pie, metadatos y la advertencia de comparabilidad que el sitio
+ * está obligado a mostrar para no publicar cifras engañosas.
+ */
+import '../styles/global.css';
+import IconoNav from '../components/IconoNav.astro';
+import { META, ANIO_ACTUAL } from '../lib/datos';
+
+interface Props {
+  titulo: string;
+  descripcion: string;
+}
+const { titulo, descripcion } = Astro.props;
+const ruta = Astro.url.pathname;
+
+/**
+ * Cada sección lleva dos nombres: el largo, que se entiende sin contexto, y
+ * el corto para la barra. Con siete secciones, los títulos largos no entran
+ * en una línea y el menú se partía encima del contenido.
+ */
+const NAV = [
+  { href: '/', texto: 'Inicio', icono: 'inicio', largo: 'Inicio' },
+  { href: '/provincias/', texto: 'Tu provincia', icono: 'provincia', largo: 'Buscá tu provincia en el mapa' },
+  { href: '/ranking/', texto: 'Quién gasta más', icono: 'gasto', largo: 'Quién gasta más por habitante' },
+  { href: '/en-que-gastan/', texto: 'En qué gastan', icono: 'destino', largo: 'En qué gasta cada provincia' },
+  { href: '/impuestos/', texto: 'Impuestos', icono: 'impuestos', largo: 'Dónde se paga más de impuestos' },
+  { href: '/coparticipacion/', texto: 'Coparticipación', icono: 'coparticipacion', largo: 'Cómo se reparte la coparticipación' },
+  { href: '/dependencia/', texto: 'Dependencia', icono: 'dependencia', largo: 'Dependencia de la Nación' },
+  { href: '/noticias/', texto: 'Noticias', icono: 'noticias', largo: 'Noticias fiscales explicadas' },
+  { href: '/metodologia/', texto: 'Metodología', icono: 'metodologia', largo: 'Cómo se calcula cada número' },
+];
+
+// Por dónde llegan las correcciones y el feedback.
+const X_URL = 'https://x.com/taxarg26';
+
+const activoProv = (h: string) =>
+  h === '/provincias/' && (ruta.startsWith('/provincias') || ruta.startsWith('/provincia/'));
+
+const activo = (h: string) =>
+  h === '/' ? ruta === '/' : activoProv(h) || ruta.startsWith(h);
+---
+
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titulo} · TaxAR</title>
+    <meta name="description" content={descripcion} />
+    <meta property="og:title" content={`${titulo} · TaxAR`} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#1A2B48" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Barlow+Condensed:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <a href="#contenido" class="solo-lectores">Saltar al contenido</a>
+
+    <header class="cabecera">
+      <div class="contenedor barra">
+        <a href="/" class="marca" aria-label="TaxAR — inicio">
+          {/*
+            Dos imágenes superpuestas: la de abajo con el "AR" en amarillo, la de
+            arriba toda negra. Al pasar el mouse la negra se desvanece y deja ver
+            la de color, que da la sensación de que el AR se pinta solo.
+            Las dos se descargan juntas, así que el cambio es instantáneo y no
+            parpadea la primera vez.
+          */}
+          <span class="logo-caja">
+            <img class="logo-color" src="/assets/logo-taxar-color.png" alt="" width="324" height="96" />
+            <img class="logo-base" src="/assets/logo-taxar.png" alt="TaxAR" width="324" height="96" />
+          </span>
+          <span class="lema">Transparencia fiscal argentina</span>
+        </a>
+
+        <button
+          class="menu-btn"
+          type="button"
+          aria-expanded="false"
+          aria-controls="nav-principal"
+        >
+          <span class="menu-lineas" aria-hidden="true"></span>
+          <span class="menu-txt">Menú</span>
+        </button>
+      </div>
+
+      <div class="contenedor">
+        <nav id="nav-principal" aria-label="Principal">
+          {NAV.map((i) => (
+            <a
+              href={i.href}
+              title={i.largo}
+              aria-current={activo(i.href) ? 'page' : undefined}
+              class:list={['enlace', activo(i.href) && 'activo']}
+            >
+              <IconoNav nombre={i.icono} />
+              <span class="txt">{i.texto}</span>
+              <span class="globo-nav" role="tooltip">{i.largo}</span>
+            </a>
+          ))}
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido"><slot /></main>
+
+    <footer class="pie">
+      <div class="contenedor">
+        <div class="pie-grilla">
+          <div>
+            <img class="logo-pie" src="/assets/logo-taxar.png" alt="TaxAR" width="324" height="96" />
+            <p class="pie-txt">
+              Datos fiscales de las 24 jurisdicciones argentinas, tomados de fuentes
+              oficiales y explicados en castellano común. Cada número enlaza al
+              archivo del que salió.
+            </p>
+          </div>
+
+          <div>
+            <p class="pie-tit">Cómo leer estas cifras</p>
+            <p class="pie-txt">
+              Todo el sitio usa el mismo universo (Administración Pública No Financiera),
+              el mismo tipo de dato (ejecutado, no presupuestado) y la misma base contable
+              (devengado). Mezclarlos cambiaría los resultados de forma drástica.
+            </p>
+          </div>
+
+          <div>
+            <p class="pie-tit">¿Encontraste un error?</p>
+            <p class="pie-txt">
+              Es posible que lo haya. Las alícuotas provinciales son las más difíciles de
+              mantener al día: cada jurisdicción publica sus cambios por su cuenta y a
+              veces a mitad de año. Si ves una cifra que no coincide con la norma vigente,
+              avisanos y la corregimos —con la fuente a la vista.
+            </p>
+            <a class="pie-x" href={X_URL} target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117Z"/>
+              </svg>
+              Escribinos en X
+            </a>
+          </div>
+        </div>
+
+        <p class="pie-cobertura mini">
+          {META.cobertura.jurisdicciones} jurisdicciones · {META.cobertura.anio_desde}–{META.cobertura.anio_hasta} ·
+          año de referencia {ANIO_ACTUAL} · <a href="/metodologia/">controles y limitaciones</a>
+        </p>
+
+        <p class="pie-legal mini">
+          Generado el {new Date(META.generado).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}.
+          Sitio independiente, sin vínculo con ningún organismo público.
+          Los datos son de acceso público; los errores de interpretación son nuestros.
+          Nada de lo publicado acá constituye asesoramiento impositivo: para tu caso
+          particular, consultá con un contador.
+        </p>
+      </div>
+    </footer>
+
+    <style>
+      /* ---------- Cabecera ----------------------------------------------
+         Dos filas deliberadas: la marca arriba, las nueve secciones abajo en
+         una sola línea. Con nueve ítems y sus íconos, meterlos junto al logo
+         obligaba a apretarlos hasta volverlos ilegibles o a que se partieran
+         en un segundo renglón desprolijo. Separarlos en su propia fila hace
+         que ese renglón se lea como una decisión y no como un desborde.
+         ------------------------------------------------------------------ */
+      .cabecera {
+        position: sticky; top: 0; z-index: 40;
+        background: rgba(255, 255, 255, .96);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--borde);
+      }
+      /* La marca va centrada, sola, arriba de las secciones. */
+      .barra {
+        display: flex; align-items: center; justify-content: center;
+        gap: 12px 26px; padding-block: 14px 10px; position: relative;
+      }
+      .marca {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 5px; text-decoration: none;
+      }
+      .logo-caja { position: relative; display: block; line-height: 0; }
+      .logo-caja img {
+        display: block; height: 38px; width: auto;
+      }
+      .logo-color { position: absolute; inset: 0; }
+      .logo-base { position: relative; transition: opacity .28s ease; }
+      .marca:hover .logo-base,
+      .marca:focus-visible .logo-base { opacity: 0; }
+
+      .lema {
+        font-size: .66rem; letter-spacing: .13em; text-transform: uppercase;
+        color: var(--tenue); font-weight: 600; white-space: nowrap;
+      }
+
+      /* ---------- Las nueve secciones ------------------------------------
+         Sólo el ícono. Las etiquetas cortadas a mitad de palabra —"Quién
+         gast…", "Coparticip…"— son peores que ninguna etiqueta: obligan a
+         adivinar y ensucian la barra. Al pasar el mouse aparece el nombre
+         completo, y el `title` lo deja disponible también para quien navega
+         con teclado o lector de pantalla.
+         ------------------------------------------------------------------ */
+      nav {
+        display: flex; align-items: stretch; justify-content: center;
+        gap: 4px; padding-bottom: 8px;
+      }
+      .enlace {
+        display: flex; align-items: center; justify-content: center;
+        width: 58px; height: 52px; border-radius: 13px;
+        color: var(--tenue); text-decoration: none;
+        position: relative;
+        transition: color .18s ease, background .18s ease;
+      }
+      .enlace .txt {
+        position: absolute; width: 1px; height: 1px;
+        overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+      }
+
+      /* El nombre completo, flotando debajo del ícono. */
+      /* La etiqueta cae hacia abajo, nunca hacia arriba: ahí está el logo y
+         taparlo sería peor que no mostrar nada. */
+      .globo-nav {
+        position: absolute; top: calc(100% + 9px); left: 50%;
+        transform: translateX(-50%) translateY(-5px);
+        background: var(--navy); color: #fff;
+        font-size: .93rem; font-weight: 600; white-space: nowrap;
+        padding: 10px 16px; border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(26, 43, 72, .3);
+        opacity: 0; pointer-events: none;
+        transition: opacity .16s ease, transform .16s ease;
+        z-index: 5;
+      }
+      .globo-nav::before {
+        content: ''; position: absolute; bottom: 100%; left: 50%;
+        margin-left: -6px; border: 6px solid transparent;
+        border-bottom-color: var(--navy);
+      }
+      .enlace:hover .globo-nav,
+      .enlace:focus-visible .globo-nav {
+        opacity: 1; transform: translateX(-50%) translateY(0);
+      }
+
+      .enlace::after {
+        content: ''; position: absolute; left: 50%; right: 50%; bottom: 3px;
+        height: 2px; border-radius: 2px; background: var(--oro);
+        transition: left .22s cubic-bezier(.22, .8, .3, 1),
+                    right .22s cubic-bezier(.22, .8, .3, 1);
+      }
+      .enlace:hover { color: var(--navy); background: rgba(26, 43, 72, .06); }
+      .enlace:hover::after { left: 26%; right: 26%; }
+      .enlace:hover :global(.ico) { transform: translateY(-1.5px) scale(1.06); }
+
+      .enlace.activo { background: var(--navy); color: #fff; }
+      .enlace.activo::after { background: var(--oro); left: 28%; right: 28%; }
+
+      /* Botón de menú: sólo aparece cuando las nueve no entran en una línea. */
+      .menu-btn {
+        display: none;
+        align-items: center; gap: 10px;
+        font-family: inherit; font-size: .88rem; font-weight: 600;
+        color: var(--navy); background: none; cursor: pointer;
+        border: 1px solid var(--borde-2); border-radius: 999px;
+        padding: 9px 16px;
+      }
+      .menu-btn:hover { border-color: var(--oro); }
+      .menu-lineas, .menu-lineas::before, .menu-lineas::after {
+        display: block; width: 17px; height: 2px;
+        background: var(--navy); border-radius: 2px;
+        transition: transform .2s ease, opacity .2s ease;
+      }
+      .menu-lineas { position: relative; }
+      .menu-lineas::before, .menu-lineas::after { content: ''; position: absolute; }
+      .menu-lineas::before { top: -6px; }
+      .menu-lineas::after { top: 6px; }
+      .menu-btn[aria-expanded='true'] .menu-lineas { background: transparent; }
+      .menu-btn[aria-expanded='true'] .menu-lineas::before { transform: translateY(6px) rotate(45deg); }
+      .menu-btn[aria-expanded='true'] .menu-lineas::after { transform: translateY(-6px) rotate(-45deg); }
+
+      .menu-btn { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
+
+      /* Con nueve íconos la barra entra hasta bastante angosto. Por debajo de
+         640px el desplegable vertical es más cómodo que nueve blancos de 46px
+         apretados, y ahí sí se muestra el nombre al lado del ícono. */
+      @media (max-width: 640px) {
+        .menu-btn { display: inline-flex; }
+        nav {
+          display: none;
+          flex-direction: column; align-items: stretch; gap: 2px;
+          padding-block: 10px 14px; margin-top: 2px;
+          border-top: 1px solid var(--borde);
+          max-height: 70vh; overflow-y: auto;
+        }
+        .cabecera[data-menu='abierto'] nav { display: flex; }
+        .enlace {
+          width: auto; height: auto; justify-content: flex-start; gap: 12px;
+          padding: 12px 14px; border-radius: var(--r-sm);
+          font-size: .95rem; font-weight: 600;
+        }
+        .enlace .txt {
+          position: static; width: auto; height: auto;
+          clip: auto; overflow: visible;
+        }
+        .enlace::after, .globo-nav { display: none; }
+      }
+
+      @media (max-width: 400px) {
+        .logo-caja img { height: 30px; }
+        .lema { font-size: .58rem; letter-spacing: .1em; }
+        .menu-txt { display: none; }
+        .menu-btn { padding: 11px 13px; }
+      }
+
+      /* ---------- Pie ---------------------------------------------------- */
+      .pie {
+        background: var(--navy); color: #C3CEE0;
+        margin-top: 70px; padding-block: 46px 30px;
+      }
+      .pie-grilla { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 34px; }
+      .logo-pie {
+        height: 30px; width: auto; margin-bottom: 12px;
+        /* el logo es negro; invertirlo lo vuelve blanco sobre el navy del pie */
+        filter: invert(1) brightness(1.9);
+      }
+      .pie-tit { color: #fff; font-weight: 700; font-size: .88rem; margin-bottom: 9px; }
+      .pie-txt { font-size: .86rem; line-height: 1.62; }
+      .pie a { color: var(--oro-claro); }
+      .pie-cobertura {
+        margin-top: 30px; padding-top: 18px;
+        border-top: 1px solid rgba(255, 255, 255, .14);
+        color: #A8B9D3;
+      }
+      .pie-legal { margin-top: 10px; color: #8FA2BE; max-width: 760px; }
+      .pie-x {
+        display: inline-flex; align-items: center; gap: 8px;
+        margin-top: 12px; padding: 8px 15px;
+        border: 1px solid rgba(255, 255, 255, .22); border-radius: 999px;
+        font-size: .85rem; font-weight: 600; color: #fff; text-decoration: none;
+        transition: background .18s ease, border-color .18s ease;
+      }
+      .pie-x:hover { background: rgba(255, 255, 255, .1); border-color: var(--oro); color: #fff; }
+
+      @media (max-width: 900px) {
+        .pie-grilla { grid-template-columns: 1fr; gap: 26px; }
+        .pie { margin-top: 48px; padding-block: 36px 26px; }
+      }
+    </style>
+
+    <script>
+      /**
+       * Menú desplegable en pantallas donde las siete secciones no entran.
+       * Se cierra con Escape, al tocar fuera y al elegir una sección, que son
+       * las tres formas en que la gente espera cerrarlo.
+       */
+      const cabecera = document.querySelector('.cabecera');
+      const boton = document.querySelector('.menu-btn');
+
+      if (cabecera && boton) {
+        const abrir = (v: boolean) => {
+          cabecera.setAttribute('data-menu', v ? 'abierto' : 'cerrado');
+          boton.setAttribute('aria-expanded', String(v));
+        };
+
+        boton.addEventListener('click', () =>
+          abrir(boton.getAttribute('aria-expanded') !== 'true'));
+
+        cabecera.querySelectorAll('nav a').forEach((a) =>
+          a.addEventListener('click', () => abrir(false)));
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') abrir(false);
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!cabecera.contains(e.target as Node)) abrir(false);
+        });
+
+        // Si se agranda la ventana con el menú abierto, el CSS vuelve a
+        // mostrar la barra horizontal: hay que dejar el estado consistente.
+        window.addEventListener('resize', () => {
+          if (window.innerWidth > 640) abrir(false);
+        });
+      }
+
+      /**
+       * Aparición de las secciones al entrar en pantalla.
+       *
+       * El contenido se sirve visible; recién acá se marca el documento como
+       * animable y se ocultan los bloques. Si el navegador no soporta
+       * IntersectionObserver o el script falla, nunca se oculta nada.
+       */
+      const animables = document.querySelectorAll<HTMLElement>(
+        '.seccion > .contenedor > *, .cinco > *, .grilla > *',
+      );
+
+      if (animables.length && 'IntersectionObserver' in window) {
+        document.documentElement.classList.add('js-anim');
+        animables.forEach((el) => el.classList.add('anim'));
+
+        const obs = new IntersectionObserver(
+          (entradas) => {
+            entradas.forEach((e) => {
+              if (!e.isIntersecting) return;
+              e.target.classList.add('visible');
+              obs.unobserve(e.target);   // una sola vez, no al volver a subir
+            });
+          },
+          { rootMargin: '0px 0px -8% 0px', threshold: 0.06 },
+        );
+
+        animables.forEach((el) => obs.observe(el));
+
+        // Red de seguridad: si algo quedara sin observar, se muestra igual.
+        setTimeout(() => {
+          animables.forEach((el) => el.classList.add('visible'));
+        }, 2500);
+      }
+    </script>
+  </body>
+</html>

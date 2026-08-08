@@ -1,0 +1,45 @@
+---
+/**
+ * Fuente.astro — La cita que acompaña a cada número del sitio.
+ *
+ * Es el componente más importante para la credibilidad: un sitio de
+ * transparencia sin fuente verificable al pie de cada dato no se distingue
+ * de una opinión. Se usa en todas las páginas, siempre igual.
+ */
+import { META } from '../lib/datos';
+
+interface Props {
+  clave: keyof typeof META.fuentes | string;
+  nota?: string;
+}
+const { clave, nota } = Astro.props;
+const f = META.fuentes[clave];
+---
+
+{f && (
+  <p class="fuente mini">
+    <span class="etiqueta-fuente">Fuente</span>
+    <a href={f.url} target="_blank" rel="noopener noreferrer">{f.nombre}</a>
+    <span class="sep">·</span>{f.organismo}
+    <span class="sep">·</span>{f.cobertura}
+    {nota && <><span class="sep">·</span>{nota}</>}
+  </p>
+)}
+
+<style>
+  .fuente {
+    margin-top: 14px;
+    padding-top: 11px;
+    border-top: 1px solid var(--borde);
+    line-height: 1.55;
+  }
+  .etiqueta-fuente {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-size: .7rem;
+    color: var(--tenue-2);
+    margin-right: 7px;
+  }
+  .sep { margin-inline: 6px; color: var(--tenue-2); }
+</style>

@@ -1,0 +1,52 @@
+---
+import Noticia from '../../layouts/Noticia.astro';
+---
+<Noticia slug="la-pampa-no-reporto">
+  <p>
+    De las 24 jurisdicciones argentinas, <strong>23 informaron su ejecución presupuestaria de
+    2025</strong> a la Dirección Nacional de Coordinación Fiscal. La Pampa no. En el archivo
+    oficial, su columna de 2025 viene entera en cero.
+  </p>
+
+  <h2>Un cero no es un dato faltante</h2>
+  <p>
+    Esto parece un detalle técnico y no lo es. Si un sistema carga esos ceros como si fueran
+    cifras reales, La Pampa aparece automáticamente como <strong>la provincia que menos gasta
+    del país</strong> — con cero pesos en salud, cero en educación y cero en sueldos. Es
+    absurdo, pero ningún programa se da cuenta solo: los ceros suman, promedian y ordenan
+    igual que cualquier número.
+  </p>
+
+  <p class="destacado">
+    Cargar un "sin dato" como cero no produce un error visible. Produce un ranking equivocado
+    que se ve perfectamente normal.
+  </p>
+
+  <h2>Y borrarla tampoco alcanza</h2>
+  <p>
+    La otra salida fácil es sacarla de la tabla. Eso evita el disparate anterior pero crea uno
+    nuevo: el sitio mostraría 23 jurisdicciones diciendo que son 24, y cualquier total del
+    país quedaría incompleto sin que el lector lo sepa. El promedio, la suma y el "quién gasta
+    más" cambiarían sin aviso.
+  </p>
+
+  <h2>Qué hace este sitio</h2>
+  <p>
+    Tres cosas, y ninguna es esconder el problema:
+  </p>
+  <ul>
+    <li>El pipeline detecta solo los años que vienen enteros en cero y los descarta como "sin
+    reporte", no como cero.</li>
+    <li>Donde falta, el sitio lo dice: en el total del país, en los rankings, y en el mapa,
+    donde La Pampa aparece rayada.</li>
+    <li>Su ficha muestra los números de 2024 con un aviso arriba de todo explicando que no
+    informó 2025 y que no completamos el hueco con una estimación.</li>
+  </ul>
+
+  <p>
+    No es una acusación a La Pampa: puede haber mil razones administrativas, y la provincia
+    reportó los 20 años anteriores. Pero un sitio de transparencia que oculta lo que le falta
+    deja de ser transparente en el primer dato incómodo. Podés ver los controles que corren
+    en cada actualización en <a href="/metodologia/">la metodología</a>.
+  </p>
+</Noticia>

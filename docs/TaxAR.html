@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TaxAR – Transparencia Fiscal para Todos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;900&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.8.0/Recharts.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Outfit', sans-serif; background: #F2F5FA; color: #1E293B; }
+    .display-font { font-family: 'Barlow Condensed', sans-serif !important; }
+    @keyframes fadeUp  { from { opacity:0; transform:translateY(22px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+    @keyframes countUp { from { opacity:0; transform:scale(0.82) } to { opacity:1; transform:scale(1) } }
+    .fade-up  { animation: fadeUp  0.52s ease both; }
+    .fade-in  { animation: fadeIn  0.38s ease both; }
+    .kpi-val  { animation: countUp 0.60s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .cta-gold:hover  { transform:translateY(-2px); box-shadow:0 10px 34px rgba(212,175,55,0.55) !important; }
+    .cta-ghost:hover { background:rgba(255,255,255,0.10) !important; }
+    .prov-btn:hover  { transform:translateY(-1px); box-shadow:0 4px 14px rgba(26,43,72,0.18); }
+    .tab-btn:hover   { background:rgba(26,43,72,0.07) !important; }
+    input[type=number]:focus,
+    input[type=text]:focus { border-color:#D4AF37 !important; box-shadow:0 0 0 3px rgba(212,175,55,0.22); outline:none; }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:#DDE3EE; border-radius:3px; }
+    ::-webkit-scrollbar-thumb { background:#2D4A7A; border-radius:3px; }
+    /* recharts tooltip */
+    .recharts-tooltip-wrapper { font-family:'Outfit',sans-serif !important; }
+    .recharts-default-tooltip { border-radius:10px !important; border:1px solid #DDE3EE !important; box-shadow:0 4px 20px rgba(0,0,0,0.12) !important; }
+    .recharts-legend-item-text { font-size:12px !important; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function(){
+  const {
+    useState, useEffect, useRef, useCallback, createElement: h
+  } = React;
+
+  const {
+    PieChart, Pie, Cell,
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+    LineChart, Line, ResponsiveContainer
+  } = Recharts;
+
+  /* ── TOKENS ─────────────────────────────────────────── */
+  const C = {
+    navy:"#1A2B48", navy2:"#2D4A7A", navy3:"#3B5998",
+    gold:"#D4AF37", white:"#FFFFFF", bg:"#F2F5FA",
+    border:"#DDE3EE", muted:"#64748B", text:"#1E293B",
+    green:"#059669",
+  };
+  const PIE_C = ["#3B82F6","#10B981","#EF4444","#F59E0B","#8B5CF6","#06B6D4","#F97316","#94A3B8"];
+  const TAX_C = [C.navy, C.navy2, C.gold, "#F5D060", "#CBD5E1"];
+
+  /* ── DATOS CÓRDOBA 2023 ──────────────────────────────── */
+  const DATA = {
+    budget: {
+      total:1_850_000, exec:1_720_000,
+      src:"Ministerio de Finanzas · Provincia de Córdoba", date:"Dic 2023",
+      fn:[
+        {name:"Educación",     v:499_500},
+        {name:"Salud",         v:296_000},
+        {name:"Seguridad",     v:203_500},
+        {name:"Obras Públicas",v:166_500},
+        {name:"Administración",v:259_000},
+        {name:"Serv. Sociales",v:222_000},
+        {name:"Deuda Pública", v:111_000},
+        {name:"Otros",         v: 92_500},
+      ],
+      hist:[
+        {y:"2019",t: 265,e: 252},
+        {y:"2020",t: 310,e: 290},
+        {y:"2021",t: 490,e: 460},
+        {y:"2022",t: 950,e: 890},
+        {y:"2023",t:1850,e:1720},
+      ],
+    },
+    tax: {
+      own:960_000, copart:580_000,
+      src:"Agencia de Recaudación Córdoba (AgRC)", date:"Dic 2023",
+      items:[
+        {name:"Ingresos Brutos",v:652_800},
+        {name:"Inmobiliario",   v:134_400},
+        {name:"Automotor",      v: 86_400},
+        {name:"Sellos",         v: 67_200},
+        {name:"Otros",          v: 19_200},
+      ],
+      hist:[
+        {y:"2019",p: 95,c:110},
+        {y:"2020",p:115,c:125},
+        {y:"2021",p:210,c:210},
+        {y:"2022",p:480,c:380},
+        {y:"2023",p:960,c:580},
+      ],
+    },
+    sal:{
+      total:649_000, pct:35.1,
+      src:"Ministerio de Finanzas · Provincia de Córdoba", date:"Dic 2023",
+    },
+  };
+
+  /* ── PROVINCIAS (id, nombre, tieneDatos, svgPoints) ─── */
+  const PROVS = [
+    ["cordoba",   "Córdoba",              true,  "165,152 312,152 312,335 248,335 228,362 165,362"],
+    ["jujuy",     "Jujuy",                false, "155,8 205,8 205,42 155,42"],
+    ["salta",     "Salta",                false, "118,8 268,8 268,100 118,100"],
+    ["formosa",   "Formosa",              false, "268,8 400,8 400,100 268,100"],
+    ["chaco",     "Chaco",                false, "268,100 400,100 400,168 268,168"],
+    ["misiones",  "Misiones",             false, "400,65 492,65 492,168 400,168"],
+    ["tucuman",   "Tucumán",              false, "175,100 215,100 215,152 175,152"],
+    ["catamarca", "Catamarca",            false, "108,100 175,100 175,152 148,188 108,188"],
+    ["sde",       "Santiago del Estero",  false, "215,100 268,100 268,252 215,252"],
+    ["corrientes","Corrientes",           false, "380,168 492,168 492,282 408,292 380,262"],
+    ["entrerios", "Entre Ríos",           false, "312,252 380,252 380,262 408,292 412,335 370,342 312,342"],
+    ["larioja",   "La Rioja",             false, "108,188 148,188 165,252 145,278 108,278"],
+    ["sanjuan",   "San Juan",             false, "68,188 108,188 108,278 68,278"],
+    ["mendoza",   "Mendoza",              false, "68,278 145,278 148,368 120,412 68,412"],
+    ["santafe",   "Santa Fe",             false, "312,152 382,152 382,335 312,335"],
+    ["bsas",      "Buenos Aires",         false, "248,335 382,335 415,512 370,552 248,552"],
+    ["caba",      "C.A.B.A.",             false, "366,335 382,335 382,350 366,350"],
+    ["sanluis",   "San Luis",             false, "120,278 165,278 165,368 120,368"],
+    ["lapampa",   "La Pampa",             false, "120,368 248,368 248,460 120,460"],
+    ["neuquen",   "Neuquén",              false, "68,412 148,412 148,462 68,462"],
+    ["rionegro",  "Río Negro",            false, "68,462 248,462 248,538 68,538"],
+    ["chubut",    "Chubut",               false, "68,538 248,538 248,632 68,632"],
+    ["santacruz", "Santa Cruz",           false, "68,632 248,632 248,726 68,726"],
+    ["tdf",       "Tierra del Fuego",     false, "95,726 215,726 215,788 95,788"],
+    ["malvinas",  "Islas Malvinas",       false, "432,580 476,580 476,628 432,628"],
+    ["antartida", "Antártida Argentina",  false, "68,788 215,788 215,818 68,818"],
+  ];
+
+  const TABS = [
+    {id:"budget", lbl:"💰 Presupuesto"},
+    {id:"taxes",  lbl:"🏦 Impuestos"},
+    {id:"salary", lbl:"👥 Salarios"},
+    {id:"calc",   lbl:"🧮 Calculadora"},
+  ];
+
+  /* ── HELPERS ─────────────────────────────────────────── */
+  const fmtB  = n => `$${(n/1e6).toFixed(2)} B`;
+  const fmtM  = n => `$${n.toLocaleString("es-AR")} M`;
+  const pctOf = (a,b) => `${((a/b)*100).toFixed(1)}%`;
+
+  /* ── ATOMS ───────────────────────────────────────────── */
+  function Card({children, style={}}){
+    return h("div",{style:{
+      background:C.white, borderRadius:16, padding:24,
+      boxShadow:"0 2px 20px rgba(26,43,72,0.07)",
+      border:`1px solid ${C.border}`, ...style
+    }}, children);
+  }
+
+  function Tip({label, text}){
+    const [show, setShow] = useState(false);
+    return h("span",{style:{position:"relative",display:"inline-block"}},
+      h("span",{
+        style:{borderBottom:`1px dashed ${C.gold}`,cursor:"help"},
+        onMouseEnter:()=>setShow(true),
+        onMouseLeave:()=>setShow(false)
+      }, label),
+      show && h("span",{style:{
+        position:"absolute", bottom:"130%", left:"50%", transform:"translateX(-50%)",
+        zIndex:300, width:220, background:C.navy, color:C.white,
+        padding:"8px 12px", borderRadius:10, fontSize:12, lineHeight:"1.55",
+        boxShadow:"0 6px 24px rgba(0,0,0,0.32)", pointerEvents:"none",
+        fontFamily:"'Outfit',sans-serif", fontWeight:400
+      }}, text)
+    );
+  }
+
+  function Kpi({label, value, sub, delay=0}){
+    return h(Card,{style:{flex:1,minWidth:158}},
+      h("div",{style:{fontSize:12,color:C.muted,marginBottom:6,lineHeight:1.4}}, label),
+      h("div",{className:"kpi-val display-font",style:{
+        fontSize:30,fontWeight:900,color:C.navy,letterSpacing:"-0.5px",
+        animationDelay:`${delay}ms`
+      }}, value),
+      sub && h("div",{style:{fontSize:11,color:C.muted,marginTop:4}}, sub)
+    );
+  }
+
+  function SrcTag({src, date, type="oficial"}){
+    const colors = {oficial:C.green, estimado:"#D97706", "simulación":"#EA580C"};
+    return h("div",{style:{
+      display:"flex",alignItems:"center",gap:8,marginTop:12,
+      fontSize:11,color:C.muted,flexWrap:"wrap"
+    }},
+      h("span",{style:{
+        background:colors[type]||C.green, color:C.white,
+        padding:"2px 8px", borderRadius:10, fontWeight:700,
+        fontSize:9, textTransform:"uppercase", letterSpacing:"0.5px", flexShrink:0
+      }}, type),
+      h("span",null, src),
+      h("span",{style:{color:C.border}}, "·"),
+      h("span",null, date)
+    );
+  }
+
+  function SecHead({icon,title,sub}){
+    return h("div",{style:{marginBottom:22},className:"fade-up"},
+      h("h2",{className:"display-font",style:{
+        fontSize:26,fontWeight:800,color:C.navy,margin:"0 0 4px",
+        letterSpacing:"0.5px",display:"flex",alignItems:"center",gap:8
+      }}, h("span",null,icon), h("span",null,title)),
+      sub && h("p",{style:{fontSize:13,color:C.muted,marginTop:4}}, sub)
+    );
+  }
+
+  function WarnCard({msg}){
+    return h("div",{style:{
+      background:"#FFFBEB", border:"1.5px solid #FCD34D", borderRadius:12,
+      padding:"14px 18px", fontSize:13, color:"#92400E",
+      display:"flex", gap:10, alignItems:"flex-start"
+    }},
+      h("span",{style:{fontSize:16}}, "⚠️"),
+      h("span",null, msg)
+    );
+  }
+
+  /* ── MAPA SVG ────────────────────────────────────────── */
+  function ArgMap({onSelect}){
+    const [hov,  setHov]  = useState(null);
+    const [sel,  setSel]  = useState("cordoba");
+    const [tip,  setTip]  = useState(null);
+    const [tipXY,setTipXY]= useState({x:0,y:0});
+    const svgRef = useRef(null);
+
+    const handleMouse = useCallback((e,p)=>{
+      if(!svgRef.current) return;
+      const r = svgRef.current.getBoundingClientRect();
+      setTipXY({
+        x: Math.min((e.clientX-r.left)*(560/r.width)+8, 365),
+        y: Math.max((e.clientY-r.top )*(830/r.height)-50, 10),
+      });
+      setTip(p);
+    },[]);
+
+    const handleClick = useCallback((p)=>{
+      if(p[2]){ setSel(p[0]); onSelect({id:p[0],name:p[1],hasData:true}); }
+      else     { onSelect({id:p[0],name:p[1],hasData:false}); }
+    },[onSelect]);
+
+    const labels = [
+      [238,255,"CÓRDOBA",  C.white, 10, 800],
+      [325,443,"Bs. As.",  C.white,  8, 600],
+      [347,245,"Santa Fe", C.white,  7, 600],
+      [103,345,"Mendoza",  C.white,  7, 500],
+      [158,588,"Chubut",   C.white,  7, 500],
+      [158,680,"Sta. Cruz",C.white,  7, 500],
+      [158,500,"Río Negro",C.white,  6, 500],
+      [215,325,"S. Luis",  C.white,  6, 400],
+      [184,415,"La Pampa", C.white,  7, 400],
+      [454,602,"Malvinas","#1A2B48", 7, 600],
+    ];
+
+    return h("div",{style:{position:"relative"}},
+      h("svg",{
+        ref:svgRef, viewBox:"0 0 560 830",
+        style:{width:"100%",maxWidth:480,display:"block",margin:"0 auto",
+          filter:"drop-shadow(0 8px 32px rgba(26,43,72,0.15))",borderRadius:12},
+        onMouseLeave:()=>{setHov(null);setTip(null);}
+      },
+        h("rect",{x:0,y:0,width:560,height:830,fill:"#CADFF0",rx:12}),
+        h("defs",null,
+          h("pattern",{id:"mapgrid",width:30,height:30,patternUnits:"userSpaceOnUse"},
+            h("path",{d:"M 30 0 L 0 0 0 30",fill:"none",stroke:"rgba(255,255,255,0.22)",strokeWidth:0.5})
+          )
+        ),
+        h("rect",{x:0,y:0,width:560,height:830,fill:"url(#mapgrid)",rx:12}),
+
+        // Polígonos
+        PROVS.map(p => {
+          const isH = hov===p[0], isS = sel===p[0];
+          const fill = isS ? C.navy : isH ? C.gold : (p[2] ? "#3A6FA3" : "#8FAFC5");
+          return h("polygon",{
+            key:p[0], points:p[3], fill:fill,
+            stroke:isS?C.gold:C.white, strokeWidth:isS?2:1.2,
+            style:{cursor:"pointer",transition:"fill 0.15s,stroke 0.15s"},
+            onMouseEnter:e=>{setHov(p[0]);handleMouse(e,p);},
+            onMouseMove:e=>handleMouse(e,p),
+            onMouseLeave:()=>{setHov(null);setTip(null);},
+            onClick:()=>handleClick(p),
+          });
+        }),
+
+        // Labels
+        labels.map(([x,y,lbl,col,sz,fw])=>
+          h("text",{key:lbl,x,y,textAnchor:"middle",fontSize:sz,fill:col,
+            fontWeight:fw,fontFamily:"'Outfit',sans-serif",
+            style:{pointerEvents:"none",userSelect:"none",letterSpacing:"0.5px"}}, lbl)
+        ),
+        h("text",{x:140,y:808,textAnchor:"middle",fontSize:6,fill:C.white,
+          fontFamily:"'Outfit',sans-serif",style:{pointerEvents:"none"}},
+          "ANTÁRTIDA ARGENTINA"),
+
+        // Tooltip
+        tip && h("g",{style:{pointerEvents:"none"}},
+          h("rect",{x:tipXY.x,y:tipXY.y,width:185,height:50,rx:8,
+            fill:C.navy,opacity:0.96,
+            style:{filter:"drop-shadow(0 3px 8px rgba(0,0,0,0.35))"}}),
+          h("text",{x:tipXY.x+10,y:tipXY.y+18,fontSize:11,fill:C.white,
+            fontWeight:700,fontFamily:"'Outfit',sans-serif"}, tip[1]),
+          h("text",{x:tipXY.x+10,y:tipXY.y+36,fontSize:10,
+            fill:tip[2]?C.gold:"#94A3B8",fontFamily:"'Outfit',sans-serif"},
+            tip[2]?"● Datos disponibles":"○ Datos en construcción")
+        )
+      )
+    );
+  }
+
+  /* ── SECCIÓN: PRESUPUESTO ────────────────────────────── */
+  function Budget(){
+    const d = DATA.budget;
+    return h("div",{className:"fade-in"},
+      h(SecHead,{icon:"💰",title:"Presupuesto y Gasto Público",
+        sub:"Ejercicio fiscal 2023 · Provincia de Córdoba"}),
+      h("div",{style:{display:"flex",gap:14,flexWrap:"wrap",marginBottom:24}},
+        h(Kpi,{label:h(Tip,{label:"Presupuesto Total",
+          text:"Monto total aprobado en la Ley de Presupuesto provincial para el ejercicio 2023."}),
+          value:fmtB(d.total), sub:"miles de millones ARS", delay:0}),
+        h(Kpi,{label:h(Tip,{label:"Gasto Devengado",
+          text:"Gasto ya comprometido o realizado administrativamente, aunque no necesariamente pagado en efectivo."}),
+          value:fmtB(d.exec), sub:`${pctOf(d.exec,d.total)} del presupuesto`, delay:100}),
+        h(Kpi,{label:"Ejecución Presupuestaria",
+          value:pctOf(d.exec,d.total), sub:"Nivel de ejecución del gasto", delay:200})
+      ),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:18}},
+        h(Card,null,
+          h("h3",{style:{fontSize:14,fontWeight:700,color:C.navy,marginBottom:2}},
+            "Distribución por Función"),
+          h(ResponsiveContainer,{width:"100%",height:275},
+            h(PieChart,null,
+              h(Pie,{data:d.fn,dataKey:"v",cx:"50%",cy:"50%",
+                innerRadius:58,outerRadius:100,fontSize:11,
+                label:({percent})=>percent>0.06?`${(percent*100).toFixed(0)}%`:"",
+                labelLine:false},
+                d.fn.map((_,i)=>h(Cell,{key:i,fill:PIE_C[i%PIE_C.length]}))
+              ),
+              h(Tooltip,{formatter:v=>[fmtM(v),"Gasto"]}),
+              h(Legend,{wrapperStyle:{fontSize:11}})
+            )
+          ),
+          h(SrcTag,{src:d.src,date:d.date})
+        ),
+        h(Card,null,
+          h("h3",{style:{fontSize:14,fontWeight:700,color:C.navy,marginBottom:2}},
+            "Evolución Histórica (miles de M ARS)"),
+          h(ResponsiveContainer,{width:"100%",height:275},
+            h(LineChart,{data:d.hist},
+              h(CartesianGrid,{strokeDasharray:"3 3",stroke:C.border}),
+              h(XAxis,{dataKey:"y",fontSize:11}),
+              h(YAxis,{fontSize:11,tickFormatter:v=>`$${v}`}),
+              h(Tooltip,{formatter:v=>[`$${v} B`]}),
+              h(Legend,{wrapperStyle:{fontSize:11}}),
+              h(Line,{dataKey:"t",stroke:C.navy,strokeWidth:2.5,name:"Presupuesto",
+                dot:{r:4,fill:C.navy},activeDot:{r:6}}),
+              h(Line,{dataKey:"e",stroke:C.gold,strokeWidth:2.5,name:"Devengado",
+                dot:{r:4,fill:C.gold},strokeDasharray:"5 5"})
+            )
+          ),
+          h(SrcTag,{src:d.src,date:d.date})
+        )
+      ),
+      h(Card,null,
+        h("h3",{style:{fontSize:14,fontWeight:700,color:C.navy,marginBottom:14}},
+          "Gasto por Función – 2023 (millones ARS)"),
+        h(ResponsiveContainer,{width:"100%",height:230},
+          h(BarChart,{data:d.fn,layout:"vertical",margin:{left:10}},
+            h(XAxis,{type:"number",fontSize:10,tickFormatter:v=>`$${(v/1000).toFixed(0)}k M`}),
+            h(YAxis,{type:"category",dataKey:"name",fontSize:11,width:135}),
+            h(Tooltip,{formatter:v=>[fmtM(v),"Gasto"]}),
+            h(Bar,{dataKey:"v",radius:[0,8,8,0]},
+              d.fn.map((_,i)=>h(Cell,{key:i,fill:PIE_C[i%PIE_C.length]}))
+            )
+          )
+        ),
+        h(SrcTag,{src:d.src,date:d.date})
+      )
+    );
+  }
+
+  /* ── SECCIÓN: IMPUESTOS ──────────────────────────────── */
+  function Taxes(){
+    const d = DATA.tax;
+    const total = d.own + d.copart;
+    return h("div",{className:"fade-in"},
+      h(SecHead,{icon:"🏦",title:"Estructura Tributaria",
+        sub:"Recaudación propia y coparticipación federal · 2023"}),
+      h("div",{style:{display:"flex",gap:14,flexWrap:"wrap",marginBottom:24}},
+        h(Kpi,{label:h(Tip,{label:"Recaudación Propia",
+          text:"Impuestos recaudados directamente por la provincia, sin depender de transferencias del Gobierno Nacional."}),
+          value:fmtB(d.own), sub:`${pctOf(d.own,total)} de los recursos`, delay:0}),
+        h(Kpi,{label:h(Tip,{label:"Coparticipación Federal",
+          text:"Fondos transferidos por el Gobierno Nacional a las provincias según la ley de coparticipación impositiva."}),
+          value:fmtB(d.copart), sub:`${pctOf(d.copart,total)} de los recursos`, delay:100}),
+        h(Kpi,{label:"Recursos Totales",
+          value:fmtB(total), sub:"Rec. propia + coparticipación", delay:200})
+      ),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}},
+        h(Card,null,
+          h("h3",{style:{fontSize:14,fontWeight:700,color:C.navy,marginBottom:2}},
+            "Composición Tributaria Provincial"),
+          h(ResponsiveContainer,{width:"100%",height:275},
+            h(PieChart,null,
+              h(Pie,{data:d.items,dataKey:"v",cx:"50%",cy:"50%",
+                innerRadius:60,outerRadius:100,fontSize:11,
+                label:({percent})=>percent>0.08?`${(percent*100).toFixed(0)}%`:"",
+                labelLine:false},
+                d.items.map((_,i)=>h(Cell,{key:i,fill:TAX_C[i%TAX_C.length]}))
+              ),
+              h(Tooltip,{formatter:v=>[fmtM(v),"Recaudación"]}),
+              h(Legend,{wrapperStyle:{fontSize:11}})
+            )
+          ),
+          h(SrcTag,{src:d.src,date:d.date})
+        ),
+        h(Card,null,
+          h("h3",{style:{fontSize:14,fontWeight:700,color:C.navy,marginBottom:2}},
+            "Rec. Propia vs Coparticipación (miles de M)"),
+          h(ResponsiveContainer,{width:"100%",height:275},
+            h(BarChart,{data:d.hist},
+              h(CartesianGrid,{strokeDasharray:"3 3",stroke:C.border}),
+              h(XAxis,{dataKey:"y",fontSize:11}),
+              h(YAxis,{fontSize:11,tickFormatter:v=>`$${v}`}),
+              h(Tooltip,{formatter:v=>[`$${v} B`]}),
+              h(Legend,{wrapperStyle:{fontSize:11}}),
+              h(Bar,{dataKey:"p",stackId:"a",fill:C.navy,name:"Rec. Propia",radius:[0,0,4,4]}),
+              h(Bar,{dataKey:"c",stackId:"a",fill:C.gold,name:"Coparticipación",radius:[4,4,0,0]})
+            )
+          ),
+          h(SrcTag,{src:d.src,date:d.date})
+        )
+      )
+    );
+  }
+
+  /* ── SECCIÓN: SALARIOS ───────────────────────────────── */
+  function Salaries(){
+    const d    = DATA.sal;
+    const rest = DATA.budget.total - d.total;
+    const donut = [
+      {name:"Masa Salarial", v:d.total},
+      {name:"Resto del Gasto",v:rest},
+    ];
+    const bars = [
+      {name:"Masa Salarial",    v:d.total,                  c:C.navy},
+      {name:"Obras Públicas",   v:DATA.budget.fn[3].v,      c:PIE_C[3]},
+      {name:"Serv. Sociales",   v:DATA.budget.fn[5].v,      c:PIE_C[5]},
+      {name:"Deuda Pública",    v:DATA.budget.fn[6].v,      c:PIE_C[6]},
+    ];
+    return h("div",{className:"fade-in"},
+      h(SecHead,{icon:"👥",title:"Gasto en Salarios Públicos",
+        sub:"Masa salarial del sector público provincial · 2023"}),
+      h(WarnCard,{msg:
+        h("span",null,
+          h("strong",null,"Nota: "),"No se publican salarios individuales. Solo se muestra el total de la masa salarial como porcentaje del presupuesto."
+        )
+      }),
+      h("div",{style:{height:14}}),
+      h("div",{style:{display:"flex",gap:14,flexWrap:"wrap",marginBottom:24}},
+        h(Kpi,{label:h(Tip,{label:"Masa Salarial Total",
+          text:"Total de remuneraciones pagadas al personal de la administración pública provincial. No se publican salarios individuales."}),
+          value:fmtB(d.total), sub:"No se publican salarios individuales", delay:0}),
+        h(Kpi,{label:"% del Presupuesto",
+          value:`${d.pct}%`, sub:"Del total del gasto provincial", delay:100})
+      ),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}},
+        h(Card,null,
+          h("h3",{style:{fontSize:14,fontWeight:700,color:C.navy,marginBottom:2}},
+            "Masa Salarial vs Resto del Gasto"),
+          h(ResponsiveContainer,{width:"100%",height:260},
+            h(PieChart,null,
+              h(Pie,{data:donut,dataKey:"v",cx:"50%",cy:"50%",
+                innerRadius:70,outerRadius:112,
+                label:({percent})=>`${(percent*100).toFixed(1)}%`},
+                h(Cell,{fill:C.navy}),
+                h(Cell,{fill:C.border})
+              ),
+              h(Tooltip,{formatter:v=>[fmtM(v)]}),
+              h(Legend,{wrapperStyle:{fontSize:11}})
+            )
+          ),
+          h(SrcTag,{src:d.src,date:d.date})
+        ),
+        h(Card,null,
+          h("h3",{style:{fontSize:14,fontWeight:700,color:C.navy,marginBottom:2}},
+            "Comparación con otras funciones"),
+          h(ResponsiveContainer,{width:"100%",height:260},
+            h(BarChart,{data:bars,layout:"vertical"},
+              h(XAxis,{type:"number",fontSize:10,tickFormatter:v=>`$${(v/1000).toFixed(0)}k M`}),
+              h(YAxis,{type:"category",dataKey:"name",fontSize:10,width:130}),
+              h(Tooltip,{formatter:v=>[fmtM(v)]}),
+              h(Bar,{dataKey:"v",radius:[0,8,8,0]},
+                bars.map((b,i)=>h(Cell,{key:i,fill:b.c}))
+              )
+            )
+          ),
+          h(SrcTag,{src:d.src,date:d.date})
+        )
+      )
+    );
+  }
+
+  /* ── SECCIÓN: CALCULADORA ────────────────────────────── */
+  function Calc(){
+    const [form, setForm] = useState({income:500000,prop:false,car:false,biz:false});
+    const [res,  setRes]  = useState(null);
+
+    const calc = () => {
+      const iva       = form.income * 0.60 * 0.21;
+      const ib        = form.biz  ? form.income * 0.035 : 0;
+      const inmo      = form.prop ? 8_500 : 0;
+      const auto      = form.car  ? 4_500 : 0;
+      const mni       = 750_000;
+      const ganancias = form.income > mni ? (form.income - mni) * 0.27 / 12 : 0;
+      setRes({iva,ib,inmo,auto,ganancias,total:iva+ib+inmo+auto+ganancias});
+    };
+
+    const bars = res ? [
+      {n:"IVA (consumo)",  v:res.iva,       c:"#3B82F6"},
+      {n:"Ing. Brutos",    v:res.ib,        c:C.navy},
+      {n:"Inmobiliario",   v:res.inmo,      c:C.gold},
+      {n:"Automotor",      v:res.auto,      c:"#8B5CF6"},
+      {n:"Ganancias",      v:res.ganancias, c:"#EF4444"},
+    ].filter(b=>b.v>0) : [];
+
+    const inp = {
+      width:"100%", padding:"10px 14px", borderRadius:8,
+      border:`1.5px solid ${C.border}`, fontSize:15,
+      color:C.text, fontFamily:"'Outfit',sans-serif",
+      transition:"border-color 0.2s", outline:"none",
+    };
+
+    return h("div",{className:"fade-in"},
+      h(SecHead,{icon:"🧮",title:"¿Cuánto Pagás en Impuestos?",
+        sub:"Estimación educativa · no es liquidación oficial"}),
+      h(WarnCard,{msg:
+        h("span",null,
+          h("strong",null,"Estimación educativa. "),
+          "Valores aproximados basados en alícuotas generales 2023. No reemplaza asesoramiento profesional ni es una liquidación oficial."
+        )
+      }),
+      h("div",{style:{height:18}}),
+      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}},
+        h(Card,null,
+          h("h3",{style:{fontSize:14,fontWeight:700,color:C.navy,marginBottom:18}},
+            "Ingresá tus datos"),
+          h("label",{style:{display:"block",fontSize:12,color:C.muted,marginBottom:5}},
+            "Ingreso mensual bruto (ARS)"),
+          h("input",{type:"number",style:{...inp,marginBottom:18},
+            value:form.income,
+            onChange:e=>setForm({...form,income:+e.target.value})}),
+          h("div",{style:{display:"flex",flexDirection:"column",gap:14,marginBottom:24}},
+            [["prop","¿Tenés propiedad inmueble?"],
+             ["car", "¿Tenés vehículo automotor?"],
+             ["biz", "¿Tenés actividad comercial o profesional?"]
+            ].map(([k,lbl])=>
+              h("label",{key:k,style:{
+                display:"flex",alignItems:"center",gap:10,fontSize:14,
+                cursor:"pointer",color:C.text
+              }},
+                h("input",{type:"checkbox",
+                  style:{accentColor:C.gold,width:17,height:17,cursor:"pointer"},
+                  checked:form[k],
+                  onChange:e=>setForm({...form,[k]:e.target.checked})}),
+                lbl
+              )
+            )
+          ),
+          h("button",{
+            onClick:calc,
+            style:{
+              width:"100%",padding:"13px",borderRadius:10,border:"none",
+              background:C.navy,color:C.white,fontWeight:700,fontSize:15,
+              cursor:"pointer",fontFamily:"'Outfit',sans-serif",transition:"all 0.2s",
+            }
+          }, "Calcular estimación →")
+        ),
+        h(Card,null,
+          res
+          ? h("div",{className:"fade-in"},
+              h("div",{style:{fontSize:12,color:C.muted,marginBottom:4}},
+                "Carga impositiva estimada mensual"),
+              h("div",{className:"display-font kpi-val",style:{
+                fontSize:38,fontWeight:900,color:C.gold,
+                letterSpacing:"-1px",marginBottom:2
+              }}, `$${res.total.toLocaleString("es-AR",{maximumFractionDigits:0})}`),
+              h("div",{style:{fontSize:13,color:C.muted,marginBottom:18}},
+                `≈ ${((res.total/form.income)*100).toFixed(1)}% de tu ingreso mensual`),
+              h(ResponsiveContainer,{width:"100%",height:185},
+                h(BarChart,{data:bars,layout:"vertical"},
+                  h(XAxis,{type:"number",fontSize:10,
+                    tickFormatter:v=>`$${(v/1000).toFixed(0)}k`}),
+                  h(YAxis,{type:"category",dataKey:"n",fontSize:11,width:115}),
+                  h(Tooltip,{formatter:v=>[
+                    `$${v.toLocaleString("es-AR",{maximumFractionDigits:0})}`]}),
+                  h(Bar,{dataKey:"v",radius:[0,8,8,0]},
+                    bars.map((b,i)=>h(Cell,{key:i,fill:b.c}))
+                  )
+                )
+              ),
+              h(SrcTag,{src:"Alícuotas generales AFIP · AgRC 2023",
+                date:"2023",type:"simulación"})
+            )
+          : h("div",{style:{
+              height:300,display:"flex",flexDirection:"column",
+              alignItems:"center",justifyContent:"center",
+              color:C.muted,textAlign:"center",gap:12
+            }},
+              h("div",{style:{fontSize:52}}, "📊"),
+              h("div",{style:{fontSize:14,lineHeight:"1.7"}},
+                "Completá el formulario",h("br"),"y hacé clic en Calcular")
+            )
+        )
+      )
+    );
+  }
+
+  /* ── MODAL PROVINCIA SIN DATOS ───────────────────────── */
+  function ProvinceModal({prov, onClose}){
+    return h("div",{
+      style:{position:"fixed",inset:0,background:"rgba(10,20,40,0.62)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        zIndex:999,backdropFilter:"blur(5px)"},
+      onClick:onClose
+    },
+      h("div",{
+        className:"fade-up",
+        onClick:e=>e.stopPropagation(),
+        style:{background:C.white,borderRadius:20,padding:"42px 38px",maxWidth:400,
+          width:"90%",textAlign:"center",boxShadow:"0 24px 60px rgba(0,0,0,0.3)"}
+      },
+        h("div",{style:{fontSize:50,marginBottom:12}}, "🏗️"),
+        h("h3",{className:"display-font",style:{
+          fontSize:24,fontWeight:800,color:C.navy,margin:"0 0 10px"
+        }}, prov.name),
+        h("p",{style:{fontSize:14,color:C.muted,margin:"0 0 28px",lineHeight:1.7}},
+          "Datos en construcción para esta provincia. Estamos trabajando para incorporar información oficial de ",
+          h("strong",{style:{color:C.navy}}, prov.name)," próximamente."
+        ),
+        h("div",{style:{display:"flex",flexDirection:"column",gap:8}},
+          h("button",{onClick:onClose,style:{
+            padding:"11px 28px",borderRadius:10,border:"none",
+            background:C.navy,color:C.white,fontWeight:700,
+            cursor:"pointer",fontSize:14,fontFamily:"'Outfit',sans-serif"
+          }}, "Volver al mapa"),
+          h("button",{style:{
+            padding:"9px",borderRadius:10,border:`1px solid ${C.border}`,
+            background:"transparent",color:C.muted,fontSize:12,
+            cursor:"pointer",fontFamily:"'Outfit',sans-serif"
+          }}, "Quiero recibir novedades sobre esta provincia")
+        )
+      )
+    );
+  }
+
+  /* ── APP PRINCIPAL ───────────────────────────────────── */
+  function TaxAR(){
+    const [showDB, setShowDB] = useState(false);
+    const [tab,    setTab]    = useState("budget");
+    const [modal,  setModal]  = useState(null);
+    const dashRef = useRef(null);
+
+    const onProv = useCallback((p)=>{
+      if(!p.hasData){ setModal(p); return; }
+      setShowDB(true);
+      setTimeout(()=>dashRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),80);
+    },[]);
+
+    const ss = {padding:"0 32px"};
+
+    return h("div",{style:{background:C.bg,minHeight:"100vh",color:C.text,
+      fontFamily:"'Outfit',sans-serif"}},
+
+      /* NAV */
+      h("nav",{style:{
+        background:C.navy, height:60, padding:"0 32px",
+        display:"flex",alignItems:"center",justifyContent:"space-between",
+        position:"sticky",top:0,zIndex:90,
+        boxShadow:"0 2px 16px rgba(0,0,0,0.25)"
+      }},
+        h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+          h("span",{className:"display-font",style:{
+            fontSize:26,fontWeight:900,color:C.white,letterSpacing:"0.5px"
+          }}, "Tax",h("span",{style:{color:C.gold}},"AR")),
+          h("span",{style:{
+            background:C.gold,color:C.navy,fontSize:9,fontWeight:800,
+            padding:"2px 8px",borderRadius:10,letterSpacing:"0.5px"
+          }}, "BETA")
+        ),
+        h("div",{style:{display:"flex",gap:24}},
+          ["Metodología","Fuentes","Acerca de"].map(l=>
+            h("span",{key:l,style:{fontSize:13,color:"rgba(255,255,255,0.6)",cursor:"pointer"}}, l)
+          )
+        )
+      ),
+
+      /* HERO */
+      h("section",{style:{
+        background:`linear-gradient(145deg,${C.navy} 0%,${C.navy2} 60%,#1A3560 100%)`,
+        padding:"90px 32px",textAlign:"center",position:"relative",overflow:"hidden"
+      }},
+        h("div",{style:{position:"absolute",top:"-80px",left:"-80px",width:380,height:380,
+          borderRadius:"50%",background:"rgba(212,175,55,0.06)",pointerEvents:"none"}}),
+        h("div",{style:{position:"absolute",bottom:0,right:"-60px",width:260,height:260,
+          borderRadius:"50%",background:"rgba(59,111,160,0.15)",pointerEvents:"none"}}),
+        h("div",{style:{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",
+          width:"60%",height:1,
+          background:`linear-gradient(90deg,transparent,${C.gold},transparent)`,opacity:0.4}}),
+        h("div",{style:{position:"relative",maxWidth:680,margin:"0 auto"}},
+          h("div",{className:"fade-up",style:{
+            display:"inline-block",background:"rgba(212,175,55,0.12)",
+            border:"1px solid rgba(212,175,55,0.3)",borderRadius:20,
+            padding:"4px 16px",marginBottom:20,
+            fontSize:11,color:C.gold,fontWeight:600,
+            letterSpacing:"1px",textTransform:"uppercase"
+          }}, "Transparencia Fiscal · Datos Oficiales · Argentina"),
+          h("h1",{className:"display-font fade-up",style:{
+            fontSize:72,fontWeight:900,color:C.white,margin:"0 0 8px",
+            lineHeight:0.95,letterSpacing:"-2px",animationDelay:"80ms"
+          }}, "Tax",h("span",{style:{color:C.gold}},"AR")),
+          h("p",{className:"fade-up",style:{
+            fontSize:22,fontWeight:600,color:"rgba(255,255,255,0.80)",
+            margin:"0 0 14px",animationDelay:"160ms"
+          }}, "Transparencia Fiscal para Todos"),
+          h("p",{className:"fade-up",style:{
+            fontSize:16,color:"rgba(255,255,255,0.56)",margin:"0 0 40px",
+            lineHeight:1.75,animationDelay:"240ms"
+          }},
+            "Explorá cómo se recaudan y utilizan los impuestos en Argentina.",
+            h("br"),"Datos oficiales, lenguaje claro, sin rodeos."
+          ),
+          h("div",{className:"fade-up",style:{
+            display:"flex",gap:14,justifyContent:"center",
+            flexWrap:"wrap",animationDelay:"320ms"
+          }},
+            h("button",{
+              className:"cta-gold",
+              onClick:()=>document.getElementById("taxar-mapa")
+                .scrollIntoView({behavior:"smooth"}),
+              style:{
+                padding:"15px 32px",borderRadius:12,border:"none",
+                background:C.gold,color:C.navy,fontWeight:800,fontSize:15,
+                cursor:"pointer",fontFamily:"'Outfit',sans-serif",
+                boxShadow:"0 4px 24px rgba(212,175,55,0.38)",transition:"all 0.2s"
+              }
+            }, "🗺️ Explorar Córdoba"),
+            h("button",{
+              className:"cta-ghost",
+              style:{
+                padding:"15px 32px",borderRadius:12,
+                border:"2px solid rgba(255,255,255,0.26)",background:"transparent",
+                color:C.white,fontWeight:600,fontSize:15,
+                cursor:"pointer",fontFamily:"'Outfit',sans-serif",transition:"all 0.2s"
+              }
+            }, "📋 Ver Metodología")
+          )
+        )
+      ),
+
+      /* STATS BAR */
+      h("div",{style:{
+        background:C.white,borderBottom:`1px solid ${C.border}`,
+        padding:"20px 32px",display:"flex",
+        justifyContent:"center",gap:56,flexWrap:"wrap"
+      }},
+        [["1","Provincia cargada"],["2023","Ejercicio fiscal"],
+         ["3","Fuentes oficiales"],["Dic 2023","Última actualización"]
+        ].map(([v,l])=>
+          h("div",{key:l,style:{textAlign:"center"}},
+            h("div",{className:"display-font",style:{fontSize:24,fontWeight:900,color:C.navy}}, v),
+            h("div",{style:{fontSize:11,color:C.muted,marginTop:2}}, l)
+          )
+        )
+      ),
+
+      /* MAPA */
+      h("section",{id:"taxar-mapa",style:{
+        padding:"52px 32px",maxWidth:1100,margin:"0 auto"
+      }},
+        h("div",{style:{textAlign:"center",marginBottom:32}},
+          h("h2",{className:"display-font",style:{
+            fontSize:34,fontWeight:800,color:C.navy,margin:"0 0 8px"
+          }}, "Mapa Fiscal de Argentina"),
+          h("p",{style:{fontSize:14,color:C.muted}},
+            "Seleccioná una provincia. Solo ",
+            h("strong",null,"Córdoba"),
+            " tiene datos disponibles en esta versión MVP."
+          )
+        ),
+        h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:32,alignItems:"start"}},
+          h(ArgMap,{onSelect:onProv}),
+          h("div",{style:{display:"flex",flexDirection:"column",gap:14}},
+            h(Card,{style:{border:`2px solid ${C.gold}`}},
+              h("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:14}},
+                h("div",{style:{width:4,height:28,background:C.gold,borderRadius:2}}),
+                h("h3",{style:{fontSize:15,fontWeight:700,color:C.navy}}, "Estado de datos")
+              ),
+              [["#3A6FA3","22 provincias + CABA – datos en construcción"],
+               [C.navy,   "Córdoba – datos oficiales disponibles (2023)"],
+               [C.gold,   "Hover activo sobre el mapa"]
+              ].map(([col,lbl])=>
+                h("div",{key:lbl,style:{display:"flex",alignItems:"center",gap:10,
+                  fontSize:13,marginBottom:8}},
+                  h("span",{style:{width:13,height:13,borderRadius:4,
+                    background:col,flexShrink:0}}),
+                  lbl
+                )
+              )
+            ),
+            h(Card,null,
+              h("h3",{style:{fontSize:14,fontWeight:700,color:C.navy,marginBottom:12}},
+                "Provincias"),
+              h("div",{style:{
+                display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,
+                maxHeight:290,overflowY:"auto",paddingRight:4
+              }},
+                PROVS.filter(p=>p[0]!=="antartida").map(p=>
+                  h("button",{
+                    key:p[0], className:"prov-btn",
+                    onClick:()=>onProv({id:p[0],name:p[1],hasData:p[2]}),
+                    style:{
+                      padding:"6px 9px",borderRadius:8,
+                      border:`1px solid ${p[2]?C.gold:C.border}`,
+                      background:p[2]?C.navy:C.bg,
+                      color:p[2]?C.white:C.muted,
+                      fontSize:11,cursor:"pointer",fontWeight:p[2]?700:400,
+                      textAlign:"left",transition:"all 0.15s",
+                      fontFamily:"'Outfit',sans-serif"
+                    }
+                  }, p[2]?"★ ":""  , p[1])
+                )
+              )
+            )
+          )
+        )
+      ),
+
+      /* DASHBOARD */
+      showDB && h("section",{ref:dashRef,style:{padding:"0 32px 64px",maxWidth:1100,margin:"0 auto"}},
+
+        /* Header */
+        h("div",{style:{
+          background:`linear-gradient(135deg,${C.navy} 0%,${C.navy2} 100%)`,
+          borderRadius:16,padding:"28px 32px",marginBottom:26,
+          display:"flex",justifyContent:"space-between",alignItems:"center",
+          flexWrap:"wrap",gap:16,boxShadow:"0 8px 32px rgba(26,43,72,0.18)"
+        }},
+          h("div",null,
+            h("div",{style:{fontSize:11,color:C.gold,fontWeight:700,
+              marginBottom:4,letterSpacing:"1.5px"}}, "PROVINCIA SELECCIONADA"),
+            h("h2",{className:"display-font",style:{
+              fontSize:30,fontWeight:900,color:C.white,margin:0
+            }}, "📍 Provincia de Córdoba"),
+            h("p",{style:{fontSize:12,color:"rgba(255,255,255,0.55)",margin:"4px 0 0"}},
+              "Ejercicio fiscal 2023 · Datos oficiales publicados")
+          ),
+          h("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+            [["$1.85 B","Presupuesto"],["$0.96 B","Rec. Propia"],["35.1%","Masa Salarial"]
+            ].map(([v,l])=>
+              h("div",{key:l,style:{
+                background:"rgba(212,175,55,0.15)",
+                border:"1px solid rgba(212,175,55,0.32)",
+                borderRadius:12,padding:"10px 16px",textAlign:"center"
+              }},
+                h("div",{className:"display-font",style:{
+                  fontSize:20,fontWeight:900,color:C.gold
+                }}, v),
+                h("div",{style:{fontSize:10,color:"rgba(255,255,255,0.6)",marginTop:2}}, l)
+              )
+            )
+          )
+        ),
+
+        /* Tabs */
+        h("div",{style:{
+          display:"flex",gap:4,marginBottom:28,background:C.white,
+          borderRadius:14,padding:6,boxShadow:"0 1px 12px rgba(26,43,72,0.06)",
+          overflowX:"auto",border:`1px solid ${C.border}`
+        }},
+          TABS.map(t=>
+            h("button",{
+              key:t.id, className:"tab-btn",
+              onClick:()=>setTab(t.id),
+              style:{
+                padding:"11px 22px",borderRadius:10,border:"none",
+                background:tab===t.id?C.navy:"transparent",
+                color:tab===t.id?C.white:C.muted,
+                fontWeight:tab===t.id?700:500,fontSize:14,
+                cursor:"pointer",whiteSpace:"nowrap",
+                transition:"all 0.2s",fontFamily:"'Outfit',sans-serif",
+                boxShadow:tab===t.id?"0 2px 12px rgba(26,43,72,0.2)":"none"
+              }
+            }, t.lbl)
+          )
+        ),
+
+        tab==="budget" && h(Budget),
+        tab==="taxes"  && h(Taxes),
+        tab==="salary" && h(Salaries),
+        tab==="calc"   && h(Calc)
+      ),
+
+      /* FOOTER */
+      h("footer",{style:{
+        background:C.navy,padding:"32px",textAlign:"center",
+        borderTop:"1px solid rgba(212,175,55,0.2)"
+      }},
+        h("div",{className:"display-font",style:{
+          fontSize:22,fontWeight:900,color:C.white,marginBottom:8
+        }}, "Tax",h("span",{style:{color:C.gold}},"AR")),
+        h("p",{style:{fontSize:13,color:"rgba(255,255,255,0.5)",marginBottom:6}},
+          "Transparencia fiscal para ciudadanos argentinos · Datos de acceso público"),
+        h("p",{style:{fontSize:11,color:"rgba(255,255,255,0.3)"}},
+          "Fuentes: Ministerio de Finanzas Prov. de Córdoba · AgRC · INDEC · 2023")
+      ),
+
+      modal && h(ProvinceModal,{prov:modal,onClose:()=>setModal(null)})
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(h(TaxAR));
+})();
+</script>
+</body>
+</html>

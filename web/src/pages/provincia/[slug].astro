@@ -1,0 +1,309 @@
+---
+/**
+ * [slug].astro — Una plantilla, 24 páginas.
+ *
+ * Los corchetes en el nombre del archivo significan "ruta dinámica": Astro
+ * llama a getStaticPaths() al compilar y genera un HTML por jurisdicción.
+ * Para agregar una provincia no se toca esta página — alcanza con que aparezca
+ * en los datos.
+ */
+import Base from '../../layouts/Base.astro';
+import Explicacion from '../../components/Explicacion.astro';
+import Fuente from '../../components/Fuente.astro';
+import TarjetaDato from '../../components/TarjetaDato.astro';
+import Composicion from '../../components/charts/Composicion.jsx';
+import EnQueGasta from '../../components/charts/EnQueGasta.jsx';
+import SerieNominalConstante from '../../components/charts/SerieNominalConstante.jsx';
+import {
+  ANIOS_FF, ANIO_ACTUAL, ANIOS, CATEGORIAS, FINALIDAD, GLOSARIO, IPC, JURISDICCIONES,
+  fila, finalidadDe, jur, puesto, puestoFF, ranking, rankingFF, serie, ultimoAnio,
+} from '../../lib/datos';
+import { millones, num, pct, pesos, veces } from '../../lib/formato';
+
+export function getStaticPaths() {
+  return Object.keys(JURISDICCIONES).map((slug) => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+const j = jur(slug!);
+
+// Cada ficha muestra el último año que ESA jurisdicción reportó, no el del
+// sitio. Si reportó menos que las demás, se dice arriba de todo en vez de
+// mostrar un dato viejo como si fuera actual.
+const A = ultimoAnio(slug!);
+const atrasada = A < ANIO_ACTUAL;
+
+const f = fila(slug!, A)!;
+const s = serie(slug!);
+
+const total = ANIOS.length && ranking('gasto_per_capita', A).length;
+const pPC = puesto('gasto_per_capita', slug!, A)!;
+const pTot = puesto('gasto_total', slug!, A)!;
+const pDep = puesto('dependencia_nacion', slug!, A)!;
+const pImp = puesto('impuestos_por_habitante', slug!, A)!;
+
+const pcRank = ranking('gasto_per_capita', A);
+const media = pcRank.reduce((acc, r) => acc + r.valor, 0) / pcRank.length;
+const vsMedia = ((f.gasto_per_capita! / media) - 1) * 100;
+
+const depRank = ranking('dependencia_nacion', A);
+const mediaDep = depRank.reduce((acc, r) => acc + r.valor, 0) / depRank.length;
+
+const superavit = (f.resultado_financiero ?? 0) >= 0;
+
+// Datos para las islas React
+const catsPorAnio: Record<string, any> = {};
+const totPorAnio: Record<string, any> = {};
+for (const fx of s) {
+  const c = CATEGORIAS[slug!]?.[String(fx.anio)];
+  if (c && fx.ingresos_totales && fx.gastos_totales) {
+    catsPorAnio[String(fx.anio)] = c;
+    totPorAnio[String(fx.anio)] = { ingresos: fx.ingresos_totales, gastos: fx.gastos_totales };
+  }
+}
+const aniosCat = Object.keys(catsPorAnio).map(Number).sort((a, b) => a - b);
+const anioBase = IPC.anio_base[j.region];
+
+// Gasto por finalidad: su propia serie, que termina un año antes que la fiscal.
+const serieFF = FINALIDAD.datos[slug!] ?? [];
+const anioFF = serieFF.length ? Math.max(...serieFF.map((x: any) => x.anio)) : null;
+const ff = anioFF ? finalidadDe(slug!, anioFF) : null;
+const pSalud = anioFF ? puestoFF('salud_hab', slug!, anioFF) : null;
+const pEduc = anioFF ? puestoFF('educacion_hab', slug!, anioFF) : null;
+const totalFF = anioFF ? rankingFF('salud_hab', anioFF).length : 0;
+
+// El vecino más parecido en población: la comparación más útil para el lector.
+const vecino = Object.keys(JURISDICCIONES)
+  .filter((o) => o !== slug && fila(o, A)?.poblacion)
+  .sort((a, b) =>
+    Math.abs(fila(a, A)!.poblacion! - f.poblacion!) -
+    Math.abs(fila(b, A)!.poblacion! - f.poblacion!))[0];
+const fv = fila(vecino, A)!;
+---
+
+<Base
+  titulo={j.nombre}
+  descripcion={`Cuánto gastó ${j.nombre} en ${A}, en qué lo gastó y cuánto depende de la Nación. Datos oficiales de ejecución presupuestaria.`}
+>
+  <section class="encabezado">
+    <div class="contenedor">
+      <p class="miga"><a href="/provincias/">Provincias</a> · {j.region}</p>
+      <h1 class="display titulo">{j.nombre}</h1>
+      <p class="bajada">
+        {num(f.poblacion)} habitantes según el Censo 2022 proyectado a {A}.
+        En {A} gastó <strong>{millones(f.gastos_totales)}</strong> de pesos —
+        <strong>{pesos(f.gasto_per_capita)}</strong> por habitante, el puesto
+        {' '}<strong>{pPC}</strong> de {total}.
+      </p>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="contenedor">
+
+      {atrasada && (
+        <p class="aviso-dato">
+          <strong>Estos números son de {A}, no de {ANIO_ACTUAL}.</strong>
+          {' '}{j.nombre} todavía no informó su ejecución presupuestaria de {ANIO_ACTUAL} a la
+          Dirección Nacional de Coordinación Fiscal, así que la cifra más reciente disponible
+          es la de {A}. No completamos el hueco con una estimación: preferimos que sepas que
+          falta. El resto del sitio compara con {ANIO_ACTUAL} cuando puede.
+        </p>
+      )}
+
+      <div class="grilla g-4">
+        <TarjetaDato
+          etiqueta="Gasto por habitante"
+          valor={pesos(f.gasto_per_capita)}
+          detalle={`Puesto ${pPC} de ${total}. ${vsMedia >= 0 ? 'Gasta' : 'Gasta'} ${num(Math.abs(vsMedia), 0)}% ${vsMedia >= 0 ? 'más' : 'menos'} que el promedio del país.`}
+          tono="oro"
+        />
+        <TarjetaDato
+          etiqueta="Gasto total"
+          valor={millones(f.gastos_totales)}
+          detalle={`Puesto ${pTot} de ${total} en volumen absoluto.`}
+        />
+        <TarjetaDato
+          etiqueta="Resultado del año"
+          valor={`${superavit ? '+' : '−'}${millones(Math.abs(f.resultado_financiero ?? 0))}`}
+          detalle={superavit
+            ? `Recaudó más de lo que gastó: ${pct(f.resultado_sobre_ingresos)} de sus ingresos.`
+            : `Gastó más de lo que recaudó: ${pct(Math.abs(f.resultado_sobre_ingresos ?? 0))} de sus ingresos.`}
+          tono={superavit ? 'superavit' : 'deficit'}
+        />
+        <TarjetaDato
+          etiqueta="Depende de la Nación"
+          valor={pct(f.dependencia_nacion)}
+          detalle={`Puesto ${pDep} de ${total}. El promedio del país es ${pct(mediaDep)}.`}
+          href="/dependencia/"
+        />
+      </div>
+
+      <div class="grilla g-2" style="margin-top:18px">
+        <TarjetaDato
+          etiqueta="Impuestos provinciales por habitante"
+          valor={pesos(f.impuestos_por_habitante)}
+          detalle={`Puesto ${pImp} de ${total}. Es lo que recauda de Ingresos Brutos, Inmobiliario, Automotor y Sellos por cada persona que vive en ${j.nombre}.`}
+          href="/impuestos/"
+        />
+        <TarjetaDato
+          etiqueta="Lo que recauda por su cuenta"
+          valor={millones(f.impuestos_propios)}
+          detalle={`Sobre ${millones(f.ingresos_totales)} de ingresos totales. El resto viene sobre todo de la Nación.`}
+        />
+      </div>
+
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">De dónde sale y en qué se va</h2>
+        <p class="bajada chico" style="margin-bottom:20px">
+          Las partidas principales del presupuesto ejecutado. Los porcentajes son sobre el
+          total de ingresos y de gastos que declara la fuente.
+        </p>
+
+        <Composicion
+          client:visible
+          categoriasPorAnio={catsPorAnio}
+          totalesPorAnio={totPorAnio}
+          glosario={GLOSARIO.categorias}
+          anios={aniosCat}
+          anioInicial={A}
+        />
+
+        <Fuente clave="serie_aif" />
+      </div>
+
+      {ff && anioFF && (
+        <div class="tarjeta tarjeta-p" style="margin-top:26px">
+          <h2 class="display h2">En qué gasta {j.nombre}</h2>
+          <p class="bajada chico" style="margin-bottom:20px">
+            El presupuesto de {anioFF} repartido por finalidad. En salud está
+            {' '}{pSalud}ª de {totalFF} por habitante; en educación, {pEduc}ª.
+            <a href="/en-que-gastan/"> Comparar con el resto del país</a>.
+          </p>
+
+          <EnQueGasta
+            client:visible
+            serie={serieFF}
+            finalidades={FINALIDAD.finalidades}
+            funciones={FINALIDAD.funciones}
+            anios={ANIOS_FF}
+            anioInicial={anioFF}
+            aniosEstimados={FINALIDAD.anios_estimados}
+            notaEstimados={FINALIDAD.nota_estimados}
+          />
+
+          <Fuente clave="serie_ff" />
+        </div>
+      )}
+
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">Cómo evolucionó el gasto</h2>
+        <p class="bajada chico" style="margin-bottom:20px">
+          En pesos corrientes cualquier serie argentina sube siempre. Ajustada por la
+          inflación de la región {j.region}, se ve lo que pasó de verdad.
+        </p>
+
+        <SerieNominalConstante client:visible serie={s} anioBase={anioBase} />
+
+        <Fuente clave="ipc" nota={`IPC de la región ${j.region}, en pesos de ${anioBase}`} />
+      </div>
+
+      <div class="tarjeta tarjeta-p" style="margin-top:26px">
+        <h2 class="display h2">Comparada con {jur(vecino).nombre}</h2>
+        <p class="bajada chico" style="margin-bottom:18px">
+          La jurisdicción de población más parecida, que es la comparación que más dice.
+        </p>
+
+        <div class="tabla-scroll">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th></th>
+                <th class="der">{j.corto}</th>
+                <th class="der">{jur(vecino).corto}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Habitantes</td>
+                <td class="der num">{num(f.poblacion)}</td>
+                <td class="der num">{num(fv.poblacion)}</td>
+              </tr>
+              <tr>
+                <td>Gasto total</td>
+                <td class="der num">{millones(f.gastos_totales)}</td>
+                <td class="der num">{millones(fv.gastos_totales)}</td>
+              </tr>
+              <tr class="destacada">
+                <td><strong>Por habitante</strong></td>
+                <td class="der num"><strong>{pesos(f.gasto_per_capita)}</strong></td>
+                <td class="der num"><strong>{pesos(fv.gasto_per_capita)}</strong></td>
+              </tr>
+              <tr>
+                <td>Depende de la Nación</td>
+                <td class="der num">{pct(f.dependencia_nacion)}</td>
+                <td class="der num">{pct(fv.dependencia_nacion)}</td>
+              </tr>
+              <tr>
+                <td>Resultado sobre ingresos</td>
+                <td class:list={['der', 'num', superavit ? 'superavit' : 'deficit']}>
+                  {pct(f.resultado_sobre_ingresos)}
+                </td>
+                <td class:list={['der', 'num', (fv.resultado_financiero ?? 0) >= 0 ? 'superavit' : 'deficit']}>
+                  {pct(fv.resultado_sobre_ingresos)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <Fuente clave="serie_aif" />
+      </div>
+
+      <div style="margin-top:26px">
+        <Explicacion titulo={`Cómo leer los números de ${j.nombre}`}>
+          <p>
+            {j.gentilicio.charAt(0).toUpperCase() + j.gentilicio.slice(1)}: de cada 100 pesos
+            de impuestos que maneja la provincia, <strong>{num(f.dependencia_nacion)}</strong>
+            {' '}llegan de la Nación y el resto los recauda ella con Ingresos Brutos,
+            Inmobiliario, Automotor y Sellos.
+          </p>
+          <p>
+            El puesto {pPC} en gasto por habitante no dice si se gasta bien o mal. Una
+            provincia extensa y con población dispersa necesita más plata por persona para
+            sostener las mismas escuelas y hospitales. Lo que sí se puede afirmar es que
+            {' '}{j.nombre} gasta {num(Math.abs(vsMedia), 0)}% {vsMedia >= 0 ? 'más' : 'menos'}
+            {' '}por habitante que el promedio de las 24 jurisdicciones.
+          </p>
+        </Explicacion>
+      </div>
+
+      <p class="volver">
+        <a href="/provincias/">← Todas las jurisdicciones</a>
+        <a href="/ranking/">Ver el ranking completo →</a>
+      </p>
+
+    </div>
+  </section>
+</Base>
+
+<style>
+  .encabezado { background: var(--navy); color: #fff; padding-block: 42px 44px; }
+  .miga { font-size: .8rem; color: #8FA2BE; }
+  .miga a { color: var(--oro-claro); }
+  .titulo { font-size: clamp(2.2rem, 5.6vw, 3.4rem); margin: 10px 0 14px; }
+  .encabezado .bajada { color: #CBD8EA; max-width: 660px; }
+  .encabezado strong { color: #fff; font-weight: 600; }
+  .h2 { font-size: clamp(1.35rem, 2.7vw, 1.8rem); color: var(--navy); margin-bottom: 5px; }
+  .volver { display: flex; justify-content: space-between; gap: 16px; margin-top: 30px; flex-wrap: wrap; font-weight: 600; }
+  .aviso-dato {
+    background: rgba(180, 83, 9, .07);
+    border: 1px solid rgba(180, 83, 9, .28);
+    border-left: 4px solid var(--alerta);
+    border-radius: var(--r-md);
+    padding: 15px 19px;
+    margin-bottom: 24px;
+    font-size: .93rem;
+    line-height: 1.65;
+  }
+  .aviso-dato strong { color: var(--alerta); }
+</style>
